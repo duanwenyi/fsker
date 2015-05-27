@@ -60,7 +60,9 @@ typedef struct EVA_BUS_ST {
 }EVA_BUS_ST_t, *EVA_BUS_ST_p;
 
 
-void *eva_init();
+void *eva_map(int do_init);
+void eva_unmap();
+
 void eva_destory();
 
 #endif

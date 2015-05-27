@@ -6,7 +6,7 @@ EVA_HDL_t eva_bus_t;
 void eva_hdl_init(){
   memset(&eva_bus_t, sizeof(EVA_HDL_t) , 0);
 
-  eva_bus_t.eva_t = eva_init();
+  eva_bus_t.eva_t = eva_map(1);
 
   eva_bus_t.eva_t->control = EVA_BUS_INIT;
 
@@ -121,7 +121,7 @@ void eva_axi_rd_func( svBit             *arready,
 		      const svBitVecVal *aruser,      // [7:0]
 		      
 		      const svBit        rready,
-		      svBit              rvalid,
+		      svBit             *rvalid,
 		      svBitVecVal       *rid,                // [3:0]
 		      svBitVecVal       *rdata_0,            // [31:0]
 		      svBitVecVal       *rdata_1, 

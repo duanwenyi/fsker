@@ -33,108 +33,229 @@ module TB_EVA(/*AUTOARG*/
    );
 
    parameter EVA_DLY_U = 0.1;
+
+   import "DPI-C" function void eva_ahb_bus_func_i( input bit       hready,
+						    input bit [1:0] hresp,
+						    input bit [31:0] hrdata
+						    );
    
-   input          hclk;
-   input 	  hrest_n;
+   import "DPI-C" function void eva_ahb_bus_func_o( output bit [1:0]  htrans,
+						    output bit 	      hwrite,
+						    output bit [31:0] haddr,
+						    output bit [31:0] hwdata
+						    );
+   
+   import "DPI-C" function void eva_axi_rd_func_i( input bit        arvalid,
+						   input bit [3:0]  arid,        // [3:0]
+						   input bit [31:0] araddr_low,
+						   input bit [31:0] araddr_high,
+						   input bit [5:0]  arlen,       // [5:0]
+						   input bit [2:0]  arsize,      // [2:0]  3'b100  (16 bytes)
+						   input bit [1:0]  arburst,     // [1:0]  2'b01
+						   input bit        arlock,
+						   input bit [3:0]  arcache,     // [3:0]
+						   input bit [2:0]  arport,      // [2:0]
+						   input bit [3:0]  arregion,    // [3:0]
+						   input bit [3:0]  arqos,       // [3:0]
+						   input bit [7:0]  aruser,      // [7:0]
+   
+						   input bit        rready,
+						   input bit [1:0]  rresp               // [1:0]
+						   );
+
+   import "DPI-C" function void eva_axi_rd_func_o( output bit        arready,
+						   output bit        rvalid,
+						   output bit [3:0]  rid,                // [3:0]
+						   output bit [31:0] rdata_0,            // [31:0]
+						   output bit [31:0] rdata_1, 
+						   output bit [31:0] rdata_2,
+						   output bit [31:0] rdata_3,
+						   output bit        rlast
+						   );
+   
+   import "DPI-C" function void eva_axi_wr_func_i( input bit        awvalid,
+						   input bit [3:0]  awid, // [3:0]
+						   input bit [31:0] awaddr_low,
+						   input bit [31:0] awaddr_high,
+						   input bit [5:0]  awlen, // [5:0]
+						   input bit [2:0]  awsize, // [2:0]  3'b100  (16 bytes)
+						   input bit [1:0]  awburst, // [1:0]  2'b01
+						   input bit 	    awlock,
+						   input bit [3:0]  awcache, // [3:0]
+						   input bit [2:0]  awport, // [2:0]
+						   input bit [3:0]  awregion, // [3:0]
+						   input bit [3:0]  awqos, // [3:0]
+						   input bit [7:0]  awuser, // [7:0]
+   
+						   input bit 	    wvalid,
+						   input bit 	    wlast,
+						   input bit [3:0]  wid, // [3:0]
+						   input bit [31:0] wdata_0, // [31:0]
+						   input bit [31:0] wdata_1, 
+						   input bit [31:0] wdata_2,
+						   input bit [31:0] wdata_3,
+						   input bit [15:0] wstrb               // [15:0]
+						   );
+
+   import "DPI-C" function void eva_axi_wr_func_o( output bit awready,
+						   output bit wready
+						   );
+
+   
+   input                    hclk;
+   input 		    hrest_n;
+
+   input 		    aclk;
+   input 		    arest_n;
+
+   output bit [1:0] 	    htrans;      
+   output bit 		    hwrite;      
+   output bit [31:0] 	    haddr;       
+   output bit [31:0] 	    hwdata;      
+   output bit [1:0] 	    hsize;     
+   output bit [2:0] 	    hburst;    
+   output bit [3:0] 	    hprot;     
+   output bit 		    hready_out;
+   
+   input bit 		    hready_in;
+   input bit [1:0] 	    hresp; 
+   input bit [31:0] 	    hrdata;
+   
+   
+   
+   
+   output bit 		    arready;                     
+   input bit 		    arvalid;                     
+   input bit [3:0] 	    arid;        // [3:0]        
+   input bit [31:0] 	    araddr;                  
+   input bit [5:0] 	    arlen;       // [5:0]        
+   input bit [2:0] 	    arsize;      // [2:0]  3'b100
+   input bit [1:0] 	    arburst;     // [1:0]  2'b01 
+   input bit 		    arlock;                      
+   input bit [3:0] 	    arcache;     // [3:0]        
+   input bit [2:0] 	    arport;      // [2:0]        
+   input bit [3:0] 	    arregion;    // [3:0]        
+   input bit [3:0] 	    arqos;       // [3:0]        
+   input bit [7:0] 	    aruser;      // [7:0]        
+   
+   input bit 		    rready;                      
+   output bit 		    rvalid;                      
+   output bit [3:0] 	    rid;                // [3:0] 
+   output bit [127:0] 	    rdata;            // [31:0]
+   output bit 		    rlast;                       
+   input bit [1:0] 	    rresp;   // [1:0] 
 
 
-   output [1:0]   htrans;      
-   output 	  hwrite;      
-   output [31:0]  haddr;       
-   output [31:0]  hwdata;      
-   output [1:0]   hsize;     
-   output [2:0]   hburst;    
-   output [3:0]   hprot;     
-   output 	  hready_out;
+   output bit 		    awready;                     
+   input bit 		    awvalid;                      
+   input bit [3:0] 	    awid;        // [3:0]         
+   input bit [31:0] 	    awaddr;                   
+   input bit [5:0] 	    awlen;       // [5:0]         
+   input bit [2:0] 	    awsize;      // [2:0]  3'b100 
+   input bit [1:0] 	    awburst;     // [1:0]  2'b01  
+   input bit 		    awlock;                       
+   input bit [3:0] 	    awcache;     // [3:0]         
+   input bit [2:0] 	    awport;      // [2:0]         
+   input bit [3:0] 	    awregion;    // [3:0]         
+   input bit [3:0] 	    awqos;       // [3:0]         
+   input bit [7:0] 	    awuser;      // [7:0]         
    
-   input 	  hready_in;
-   input [1:0] 	  hresp; 
-   input [31:0]   hrdata;
-    
-   
-   
-   input 	  aclk;
-   input 	  arest_n;
-   
-   output 	  arready;                     
-   input 	  arvalid;                     
-   input [3:0] 	  arid;        // [3:0]        
-   input [31:0]   araddr;                  
-   input [5:0] 	  arlen;       // [5:0]        
-   input [2:0] 	  arsize;      // [2:0]  3'b100
-   input [1:0] 	  arburst;     // [1:0]  2'b01 
-   input 	  arlock;                      
-   input [3:0] 	  arcache;     // [3:0]        
-   input [2:0] 	  arport;      // [2:0]        
-   input [3:0] 	  arregion;    // [3:0]        
-   input [3:0] 	  arqos;       // [3:0]        
-   input [7:0] 	  aruser;      // [7:0]        
-   
-   input 	  rready;                      
-   output 	  rvalid;                      
-   output [3:0]   rid;                // [3:0] 
-   output [127:0] rdata;            // [31:0]
-   output 	  rlast;                       
-   input [1:0] 	  rresp;   // [1:0] 
+   output bit 		    wready;                       
+   input bit 		    wvalid;                       
+   input bit 		    wlast;                        
+   input bit [3:0] 	    wid;                // [3:0]  
+   input bit [127:0] 	    wdata;            // [31:0]    
+   input bit [15:0] 	    wstrb ;   // [15:0] 
 
 
-   output 	  awready;                     
-   input 	  awvalid;                      
-   input [3:0] 	  awid;        // [3:0]         
-   input [31:0]   awaddr;                   
-   input [5:0] 	  awlen;       // [5:0]         
-   input [2:0] 	  awsize;      // [2:0]  3'b100 
-   input [1:0] 	  awburst;     // [1:0]  2'b01  
-   input 	  awlock;                       
-   input [3:0] 	  awcache;     // [3:0]         
-   input [2:0] 	  awport;      // [2:0]         
-   input [3:0] 	  awregion;    // [3:0]         
-   input [3:0] 	  awqos;       // [3:0]         
-   input [7:0] 	  awuser;      // [7:0]         
    
-   output 	  wready;                       
-   input 	  wvalid;                       
-   input 	  wlast;                        
-   input [3:0] 	  wid;                // [3:0]  
-   input [127:0]  wdata;            // [31:0]    
-   input [15:0]   wstrb ;   // [15:0] 
-
-
 
    assign hsize  = 2'b10;
    assign hburst = 3'b0;
    assign hprot  = 4'b0;
 
-   reg 		  hready_in_s;
-   reg [1:0] 	  hresp_s; 
-   reg [31:0] 	  hrdata_s;
-
-   always @(posedge hclk)
-     begin
-	hready_in_s <= hready_in;
-	hresp_s     <= hresp;  	
-	hrdata_s    <= hrdata; 	
-     end
-
    assign hready_out = hready_in;
    
    always @(posedge hclk)
-     if(hrest_n)
-       #EVA_DLY_U eva_ahb_bus_func( htrans,
-				    hwrite,
-				    haddr,
-				    hwdata,
-				    //hsize,
-				    //hburst,
-				    //hprot,
+     if(hrest_n) begin
+       eva_ahb_bus_func_i( hready_in,
+			   hresp,
+			   hrdata
+			   );
 
-				    hready_s,
-				    hresp_s,
-				    hrdata_s
-				    );
+	#EVA_DLY_U 
+	  eva_ahb_bus_func_o( htrans,
+			      hwrite,
+			      haddr,
+			      hwdata
+			      );
+ 
+     end
    
+   always @(posedge aclk)
+     if(arest_n) begin
+	eva_axi_rd_func_i( arvalid,
+			   arid,        // [3:0]
+			   araddr,
+			   32'b0,
+			   arlen,       // [5:0]
+			   arsize,      // [2:0]  3'b100  (16 bytes)
+			   arburst,     // [1:0]  2'b01
+			   arlock,
+			   arcache,     // [3:0]
+			   arport,      // [2:0]
+			   arregion,    // [3:0]
+			   arqos,       // [3:0]
+			   aruser,      // [7:0]
+	
+			   rready,
+			   rresp               // [1:0]
+			   );
 
+	#EVA_DLY_U 
+	  eva_axi_rd_func_o( arready,
+			     rvalid,
+			     rid,                // [3:0]
+			     rdata[ 31: 0],            // [31:0]
+			     rdata[ 63:32], 
+			     rdata[ 95:64],
+			     rdata[127:96],
+			     rlast
+			     );
+     end
 
+   always @(posedge aclk)
+     if(arest_n) begin
+	eva_axi_wr_func_i( awvalid,
+			   awid, // [3:0]
+			   awaddr,
+			   32'b0,
+			   awlen, // [5:0]
+			   awsize, // [2:0]  3'b100  (16 bytes)
+			   awburst, // [1:0]  2'b01
+			   awlock,
+			   awcache, // [3:0]
+			   awport, // [2:0]
+			   awregion, // [3:0]
+			   awqos, // [3:0]
+			   awuser, // [7:0]
+	
+			   wvalid,
+			   wlast,
+			   wid, // [3:0]
+			   wdata[ 31: 0], // [31:0]
+			   wdata[ 63:32], 
+			   wdata[ 95:64],
+			   wdata[127:96],
+			   wstrb               // [15:0]
+			   );
+
+	#EVA_DLY_U 
+	  eva_axi_wr_func_o( awready,
+			     wready
+			     );
+     end
+   
 
 
    

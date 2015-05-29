@@ -1,22 +1,23 @@
-EVA_PRO_PATH = $(PWD)/../
+EVA_PRO_PATH = $(PWD)/..
 EVA_PATH     = $(EVA_PRO_PATH)/shm/include
-EVA_SRC      = $(EVA_PATH)/eva.c 
+EVA_SRC      = $(wildcard $(EVA_PRO_PATH)/shm/dpi/*.c) $(EVA_PATH)/eva.c
 #EVA_OBJ      = $(EVA_SRC:.c=.o) $(EVA_PRO_PATH)/shm/dpi/eva_hdl_drv.c
-EVA_OBJ      = $(patsubst %.c,%.o,$(SOURCES) $(EVA_PRO_PATH)/shm/dpi/eva_hdl_drv.c)
+EVA_OBJ      = $(patsubst %.c,%.o,$(EVA_SRC))
 
 CC          = gcc
 CXX         = g++
 DEFINES     = 
 CFLAGS      = -pipe -O2 -Wall -W -m32 $(DEFINES) -lpthread
 CXXFLAGS    = -pipe -O2 -Wall -W -m32 $(DEFINES) -lpthread
-INCPATH     = -I$(EVA_PATH) -I$(EVA_PRO_PATH)/shm/dpi -I$(VCS_HOME)/include
+INCPATH     = -I$(EVA_PATH) -I$(EVA_PRO_PATH)/shm/dpi -I$(VCS_HOME)/include -I$(CDSHOME)/tools/include
 LINK        = gcc
 LFLAGS      = -Wl -lpthread
 LIBS        = 
 
 ## HDL compile options
 DUT_CMPL_OPTS = -sv -update
-DUT_ELAB_OPTS = -sv -update
+DUT_ELAB_OPTS = TH
+DUT_RUN_OPTS  = TH
 
 HDL_COMPILER = ncvlog
 
@@ -27,15 +28,17 @@ HDL_COMPILER = ncvlog
 eva:
 	make -f ../app/Makefile
 
+dpi:
+	$(CC) -Wall -g -fPIC -m32 $(EVA_SRC) $(INCPATH) -shared -o libdpi.so
 
 svtb:
 	$(CC) -Wall -g -fPIC -m32 $(EVA_SRC) $(INCPATH) -shared -o libdpi.so
 #	vcs -f project.f libdpi.so $(DUT_CMP_OPTS)
 	ncvlog -f project.f $(DUT_CMPL_OPTS)
-#	ncelab $(DUT_ELAB_OPTS)
+	ncelab $(DUT_ELAB_OPTS)
 
 run:
-	ncsim
+	ncsim $(DUT_RUN_OPTS)
 
 ipcs:
 	ipcs -m |grep $$USER |awk '{print $$2}' | xargs ipcrm -m

@@ -13,7 +13,7 @@
 // control
 #define EVA_BUS_INIT   0x55
 #define EVA_BUS_ACK    0x5C
-#define EVA_BUS_ALVIE  0xCC
+#define EVA_BUS_ALIVE  0xCC
 #define EVA_BUS_PAUSE  0xC0
 #define EVA_BUS_STOP   0x00
 

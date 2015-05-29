@@ -23,11 +23,11 @@
 module TB_EVA(/*AUTOARG*/
    // Outputs
    htrans, hwrite, haddr, hwdata, hsize, hburst, hprot, hready_out,
-   arready, rvalid, rid, rdata, rlast, awready, wready,
+   arready, rvalid, rid, rdata, rlast, rresp, awready, wready,
    // Inputs
    hclk, hrest_n, hready_in, hresp, hrdata, aclk, arest_n, arvalid,
    arid, araddr, arlen, arsize, arburst, arlock, arcache, arport,
-   arregion, arqos, aruser, rready, rresp, awvalid, awid, awaddr,
+   arregion, arqos, aruser, rready, awvalid, awid, awaddr,
    awlen, awsize, awburst, awlock, awcache, awport, awregion, awqos,
    awuser, wvalid, wlast, wid, wdata, wstrb
    );
@@ -59,8 +59,7 @@ module TB_EVA(/*AUTOARG*/
 						   input bit [3:0]  arqos,       // [3:0]
 						   input bit [7:0]  aruser,      // [7:0]
    
-						   input bit        rready,
-						   input bit [1:0]  rresp               // [1:0]
+						   input bit        rready
 						   );
 
    import "DPI-C" function void eva_axi_rd_func_o( output bit        arready,
@@ -70,7 +69,8 @@ module TB_EVA(/*AUTOARG*/
 						   output bit [31:0] rdata_1, 
 						   output bit [31:0] rdata_2,
 						   output bit [31:0] rdata_3,
-						   output bit        rlast
+						   output bit        rlast,
+						   output bit [1:0]  rresp               // [1:0]
 						   );
    
    import "DPI-C" function void eva_axi_wr_func_i( input bit        awvalid,
@@ -143,7 +143,7 @@ module TB_EVA(/*AUTOARG*/
    output bit [3:0] 	    rid;                // [3:0] 
    output bit [127:0] 	    rdata;            // [31:0]
    output bit 		    rlast;                       
-   input bit [1:0] 	    rresp;   // [1:0] 
+   output bit [1:0] 	    rresp;   // [1:0] 
 
 
    output bit 		    awready;                     
@@ -208,8 +208,7 @@ module TB_EVA(/*AUTOARG*/
 			   arqos,       // [3:0]
 			   aruser,      // [7:0]
 	
-			   rready,
-			   rresp               // [1:0]
+			   rready
 			   );
 
 	#EVA_DLY_U 
@@ -220,7 +219,8 @@ module TB_EVA(/*AUTOARG*/
 			     rdata[ 63:32], 
 			     rdata[ 95:64],
 			     rdata[127:96],
-			     rlast
+			     rlast,
+			     rresp               // [1:0]
 			     );
      end
 

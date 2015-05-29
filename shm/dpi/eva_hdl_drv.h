@@ -65,7 +65,6 @@ typedef struct EVA_HDL{
   uint32_t arqos;       // [3:0]
   uint32_t aruser;      // [7:0]
   uint32_t rready;
-  uint32_t rresp;               // [1:0]
 
   // AXI write
   uint32_t awvalid;
@@ -122,8 +121,7 @@ void eva_axi_rd_func_i( const svBit        arvalid,
 			const svBitVecVal *arqos,       // [3:0]
 			const svBitVecVal *aruser,      // [7:0]
 		      
-			const svBit        rready,
-			const svBitVecVal *rresp               // [1:0]
+			const svBit        rready
 			);
 
 void eva_axi_rd_func_o( svBit             *arready,
@@ -133,7 +131,8 @@ void eva_axi_rd_func_o( svBit             *arready,
 			svBitVecVal       *rdata_1, 
 			svBitVecVal       *rdata_2,
 			svBitVecVal       *rdata_3,
-			svBit             *rlast
+			svBit             *rlast,
+			svBitVecVal       *rresp               // [1:0]
 			);
 
 

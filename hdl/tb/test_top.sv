@@ -5,8 +5,8 @@ module TH;
    wire 	    aclk;
    wire 	    hclk;
    
-   wire 	    arst_n;
-   wire 	    hrst_n;
+   wire 	    arest_n;
+   wire 	    hrest_n;
 
    // AHB BUS
    wire [1:0] 	    htrans;      
@@ -69,8 +69,7 @@ module TH;
    wire [15:0] 	    wstrb ;   // [15:0] 
 
    //Replace regexp (default \(\w+\)\(,\) -> \1^I^I(\1^I),^J): 
-   TB_EVA eva(/*AUTOINST*/
-	      // Outputs
+   TB_EVA eva(// Outputs
 	      .htrans		(htrans		),
 	      .hwrite		(hwrite		),
 	      .haddr		(haddr		),
@@ -142,4 +141,30 @@ module TH;
 			   .hrst_n	(hrst_n	)
 			   );
 
+   IVS_TOP U_IVS_TOP(/*AUTOINST*/
+		     // Outputs
+		     .hready_out	(hready_in),
+		     .hresp		(hresp[1:0]),
+		     .hrdata		(hrdata[31:0]),
+		     // Inputs
+		     .hclk		(hclk),
+		     .hrst_n		(hrest_n),
+		     .hsel		(1'b1),
+		     .htrans		(htrans[1:0]),
+		     .hwrite		(hwrite),
+		     .haddr		(haddr[31:0]),
+		     .hwdata		(hwdata[31:0]),
+		     .hsize		(hsize[1:0]),
+		     .hburst		(hburst[2:0]),
+		     .hprot		(hprot[3:0]),
+		     .hready_in		(hready_out)
+		     );
+   
+   
 endmodule // TH
+
+// Local Variables:
+// verilog-library-directories:("."  "../rtl")
+// verilog-library-files:("../rtl/ivs_top.v")
+// verilog-library-extensions:(".v" ".h")
+// End:

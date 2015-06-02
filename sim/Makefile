@@ -15,9 +15,10 @@ LFLAGS      = -Wl -lpthread
 LIBS        = 
 
 ## HDL compile options
+TOP_MODULE    = TH
 DUT_CMPL_OPTS = -sv -update
-DUT_ELAB_OPTS = TH
-DUT_RUN_OPTS  = TH
+DUT_ELAB_OPTS = -delay_mode zero -notimingchecks -noneg_tchk -access +rwc -timescale 1ns/10ps ${TOP_MODULE}
+DUT_RUN_OPTS  = ${TOP_MODULE} -nontcglitch -errormax 1 -input wave.tcl
 
 HDL_COMPILER = ncvlog
 
@@ -44,4 +45,4 @@ ipcs:
 	ipcs -m |grep $$USER |awk '{print $$2}' | xargs ipcrm -m
 
 clean:
-	rm *.fsdb INCA_libs libdpi.so *.log -rf
+	rm *.fsdb INCA_libs libdpi.so *.log eva_demo *.shm *.key -rf

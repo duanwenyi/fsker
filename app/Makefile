@@ -1,11 +1,11 @@
-SLIB     = /home/apachee/eva
+SLIB     = $(PWD)/..
 EVA_PATH = $(SLIB)/shm/include
 EVA_SRC  = $(wildcard $(EVA_PATH)/*.c)
-EVA_OBJ  = $(EVA_SRC:.c=.o)
+#EVA_OBJ  = $(EVA_SRC:.c=.o)
+EVA_OBJ      = $(patsubst %.c,%.o,$(EVA_SRC))
 
-EVA_APP_PATH = $(PWD)/../app
+EVA_APP_PATH = $(SLIB)/app
 SOURCES      = $(wildcard $(EVA_APP_PATH)/*.c)
-#SOURCES      = $(EVA_APP_PATH)/eve_demo.c
 OBJECTS      = $(patsubst %.c,%.o,$(SOURCES))
 
 CC          = gcc

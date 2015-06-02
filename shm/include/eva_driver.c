@@ -3,10 +3,14 @@
 EVA_BUS_ST_p eva_t = NULL;
 pthread_t eva_axi_wr,eva_axi_rd;
 
+//#define EVA_SAFE_MODE
+
 void eva_cpu_wr(uint32_t addr, uint32_t data){
+#ifdef EVA_SAFE_MODE
   while(eva_t->ahb_sync != EVA_SYNC_ACK){
     usleep(1);
   }
+#endif
   eva_t->ahb_write = 1;
   eva_t->ahb_addr  = addr;
   eva_t->ahb_data  = data;
@@ -18,9 +22,11 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
 }
 
 uint32_t eva_cpu_rd(uint32_t addr){
+#ifdef EVA_SAFE_MODE
   while(eva_t->ahb_sync != EVA_SYNC_ACK){
     usleep(1);
   }
+#endif
   eva_t->ahb_write = 0;
   eva_t->ahb_addr  = addr;
   eva_t->ahb_sync  = 1;
@@ -37,7 +43,7 @@ void eva_axi_rd_handler(void){
   uint32_t *ptr;
   while(1){
     if(eva_t->axi_r_sync == EVA_SYNC){
-      ptr = (uint32_t *)axi_r_addr;
+      ptr = (uint32_t *)eva_t->axi_r_addr;
       eva_t->axi_r_data0 = *ptr;
       ptr++;
       eva_t->axi_r_data1 = *ptr;
@@ -59,7 +65,7 @@ void eva_axi_wr_handler(void){
   uint32_t *ptr;
   while(1){
     if(eva_t->axi_w_sync == EVA_SYNC){
-      ptr = (uint32_t *)axi_w_addr;
+      ptr = (uint32_t *)eva_t->axi_w_addr;
       *ptr = eva_t->axi_w_data0;
       ptr++;
       *ptr = eva_t->axi_w_data1;
@@ -79,7 +85,7 @@ void eva_axi_wr_handler(void){
 void eva_drv_init(){
   int ret;
 
-  eva_t = eva_map(1);
+  eva_t = eva_map(0);
   if( eva_t->control != EVA_BUS_INIT){
     fprintf(stderr, " @EVA HDL is not detected start first , exit .\n");  
     exit(EXIT_FAILURE);  
@@ -91,9 +97,11 @@ void eva_drv_init(){
     usleep(1);
   }
   
-  if( eva_t->control != EVA_BUS_ALVIE){
+  if( eva_t->control != EVA_BUS_ALIVE){
     fprintf(stderr, " @EVA HDL is not response correct, exit .\n");  
     exit(EXIT_FAILURE);  
+  }else{
+    fprintf(stderr, " @EVA HDL Handshake Over , set ALIVE OK.\n");  
   }
 
   ret = pthread_create(&eva_axi_wr, NULL, (void *)eva_axi_wr_handler, NULL);
@@ -113,12 +121,13 @@ void eva_drv_init(){
 
 void eva_drv_stop(){
 
-  if( eva_t->control != EVA_BUS_ALVIE){
+  if( eva_t->control != EVA_BUS_ALIVE){
     fprintf(stderr, " @EVA HDL is not alive when stop , exit .\n");  
     exit(EXIT_FAILURE);  
   }
 
   eva_t->control = EVA_BUS_STOP;
+  fprintf(stderr, " @EVA SW STOP ...\n");  
 
   while(eva_t->control == EVA_BUS_STOP ){
     usleep(1);
@@ -130,7 +139,7 @@ void eva_drv_stop(){
 
 void eva_drv_pause(){
 
-  if( eva_t->control != EVA_BUS_ALVIE){
+  if( eva_t->control != EVA_BUS_ALIVE){
     fprintf(stderr, " @EVA HDL is not alive when pause , exit .\n");  
     exit(EXIT_FAILURE);  
   }

@@ -34,6 +34,9 @@ module TB_EVA(/*AUTOARG*/
 
    parameter EVA_DLY_U = 0.1;
 
+   import "DPI-C" function void eva_hdl_init();
+   import "DPI-C" function void eva_hdl_stop(output bit stop);
+
    import "DPI-C" function void eva_ahb_bus_func_i( input bit       hready,
 						    input bit [1:0] hresp,
 						    input bit [31:0] hrdata
@@ -168,7 +171,7 @@ module TB_EVA(/*AUTOARG*/
    input bit [15:0] 	    wstrb ;   // [15:0] 
 
 
-   
+   bit 			    stop;
 
    assign hsize  = 2'b10;
    assign hburst = 3'b0;
@@ -255,7 +258,22 @@ module TB_EVA(/*AUTOARG*/
 			     wready
 			     );
      end
+
+   initial begin
+      eva_hdl_init();
+   end
    
+   
+   always @(posedge aclk)
+     if(arest_n) begin
+	eva_hdl_stop(stop);
+
+	if(stop)begin
+	   $display(" @EVA SW STOPED ");
+	   #50ns;
+	   $finish();
+	end
+     end
 
 
    

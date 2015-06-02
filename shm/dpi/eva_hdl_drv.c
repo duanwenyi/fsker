@@ -11,6 +11,7 @@ void eva_hdl_init(){
   eva_bus_t.eva_t->control = EVA_BUS_INIT;
 
   while(eva_bus_t.eva_t->control == EVA_BUS_INIT ){
+    usleep(1);
   }
   
   if( eva_bus_t.eva_t->control != EVA_BUS_ACK){

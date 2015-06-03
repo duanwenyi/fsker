@@ -1,9 +1,10 @@
 #include "eva_driver.h"
 
-EVA_BUS_ST_p eva_t = NULL;
+static EVA_BUS_ST_p eva_t = NULL;
 pthread_t eva_axi_wr,eva_axi_rd;
 
-//#define EVA_SAFE_MODE
+#define EVA_SAFE_MODE
+//#define EVA_DEBUG
 
 void eva_cpu_wr(uint32_t addr, uint32_t data){
 #ifdef EVA_SAFE_MODE
@@ -14,11 +15,16 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
   eva_t->ahb_write = 1;
   eva_t->ahb_addr  = addr;
   eva_t->ahb_data  = data;
-  eva_t->ahb_sync  = 1;
-
+  eva_t->ahb_sync  = EVA_SYNC;
+#ifdef EVA_DEBUG
+  fprintf(stderr," @AHB write addr: 0x%8x  data: 0x%8x\n",eva_t->ahb_addr, eva_t->ahb_data );
+#endif
   while(eva_t->ahb_sync == EVA_SYNC){
     usleep(1);
   }
+#ifdef EVA_DEBUG
+  fprintf(stderr," @AHB write addr: 0x%8x  data: 0x%8x OK\n",eva_t->ahb_addr, eva_t->ahb_data );
+#endif
 }
 
 uint32_t eva_cpu_rd(uint32_t addr){
@@ -29,11 +35,18 @@ uint32_t eva_cpu_rd(uint32_t addr){
 #endif
   eva_t->ahb_write = 0;
   eva_t->ahb_addr  = addr;
-  eva_t->ahb_sync  = 1;
+  eva_t->ahb_sync  = EVA_SYNC;
+
+#ifdef EVA_DEBUG
+  fprintf(stderr," @AHB read addr: 0x%8x \n",eva_t->ahb_addr );
+#endif
 
   while(eva_t->ahb_sync == EVA_SYNC){
     usleep(1);
   }
+#ifdef EVA_DEBUG
+  fprintf(stderr," @AHB read addr: 0x%8x  data: 0x%8x OK\n",eva_t->ahb_addr, eva_t->ahb_data );
+#endif
   
   return eva_t->ahb_data;
 }
@@ -116,7 +129,7 @@ void eva_drv_init(){
     exit(EXIT_FAILURE);  
   }
 
-  fprintf(stderr, " @EVA SW initial OVER ^^ . @0x%8x\n",(uint32_t)eva_t);  
+  fprintf(stderr, " @EVA SW initial OVER @0x%8x\n",(uint32_t)eva_t);  
 }
 
 void eva_drv_stop(){

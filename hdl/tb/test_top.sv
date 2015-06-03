@@ -137,8 +137,8 @@ module TH;
 			   // Outputs
 			   .aclk	(aclk	),
 			   .hclk	(hclk	),
-			   .arst_n	(arst_n	),
-			   .hrst_n	(hrst_n	)
+			   .arst_n	(arest_n),
+			   .hrst_n	(hrest_n)
 			   );
 
    IVS_TOP U_IVS_TOP(/*AUTOINST*/

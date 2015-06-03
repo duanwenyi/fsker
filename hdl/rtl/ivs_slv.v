@@ -48,7 +48,21 @@ module IVS_SLV(/*AUTOARG*/
    wire 		wr_en = cs_en &  hwrite;
    wire 		rd_en = cs_en & ~hwrite;
 
-   assign hready_out = ~rd_en_ff;
+   wire [31:0] 		hrdata_s = ( {32{addr_ofst == 10'h000}} & glb_ctrl |
+      
+				     {32{addr_ofst == 10'h100}} & cfg_par0 |
+				     {32{addr_ofst == 10'h104}} & cfg_par1 |
+				     {32{addr_ofst == 10'h108}} & cfg_par2 |
+				     {32{addr_ofst == 10'h10c}} & cfg_par3 |
+				     {32{addr_ofst == 10'h110}} & cfg_par4 |
+				     {32{addr_ofst == 10'h114}} & cfg_par5 |
+				     {32{addr_ofst == 10'h118}} & cfg_par6 |
+				     {32{addr_ofst == 10'h11c}} & cfg_par7
+				     );
+
+   wire 		sw_rst_s = wr_en_ff && (addr_ofst == 10'h004) && hwdata[0];
+
+   assign hready_out = ~cs_en_ff;
    assign hresp      = 2'b0;
 
    always @(posedge hclk)
@@ -103,17 +117,6 @@ module IVS_SLV(/*AUTOARG*/
 	 10'h11c:   cfg_par7  <= hwdata;
        endcase // case (addr_ofst)
    
-   wire hrdata_s = ( {32{addr_ofst == 10'h000}} & glb_ctrl |
-      
-		     {32{addr_ofst == 10'h100}} & cfg_par0 |
-		     {32{addr_ofst == 10'h104}} & cfg_par1 |
-		     {32{addr_ofst == 10'h108}} & cfg_par2 |
-		     {32{addr_ofst == 10'h10c}} & cfg_par3 |
-		     {32{addr_ofst == 10'h110}} & cfg_par4 |
-		     {32{addr_ofst == 10'h114}} & cfg_par5 |
-		     {32{addr_ofst == 10'h118}} & cfg_par6 |
-		     {32{addr_ofst == 10'h11c}} & cfg_par7
-		     );
    
    
    always @(posedge hclk)
@@ -121,9 +124,6 @@ module IVS_SLV(/*AUTOARG*/
        hrdata  <= 32'b0;
      else if(rd_en_ff)
        hrdata  <= hrdata_s;
-
-
-   wire sw_rst_s = wr_en_ff && (addr_ofst == 10'h004) && hwdata[0];
 
    always @(posedge hclk)
      if(~hrst_n)

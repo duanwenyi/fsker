@@ -3,9 +3,11 @@
 
 EVA_HDL_t eva_bus_t;
 
+#define EVA_DEBUG
+
 void eva_hdl_init(){
   memset(&eva_bus_t, sizeof(EVA_HDL_t) , 0);
-
+  
   eva_bus_t.eva_t = eva_map(1);
 
   eva_bus_t.eva_t->control = EVA_BUS_INIT;
@@ -19,7 +21,11 @@ void eva_hdl_init(){
     exit(EXIT_FAILURE);  
   }
 
-  eva_bus_t.eva_t->control = EVA_BUS_ALIVE;
+  eva_bus_t.eva_t->control    = EVA_BUS_ALIVE;
+  eva_bus_t.eva_t->ahb_sync   = EVA_SYNC_ACK;
+  eva_bus_t.eva_t->axi_w_sync = EVA_SYNC_ACK;
+  eva_bus_t.eva_t->axi_r_sync = EVA_SYNC_ACK;
+
   fprintf(stderr, " @EVA HDL is set ALIVE OK .\n");  
  
 }
@@ -54,7 +60,7 @@ void eva_ahb_bus_func_i( const svBit        hready,
 			 const svBitVecVal *hrdata
 			 ){
   eva_bus_t.hready = hready;
-  eva_bus_t.hresp  = *hresp;
+  eva_bus_t.hresp  = *hresp & 0x3;
   eva_bus_t.hrdata = *hrdata;
   
 }
@@ -74,10 +80,15 @@ void eva_ahb_bus_func_o( svBitVecVal *htrans,
       *htrans = EVA_AHB_NONSEQ;
       *haddr  = eva_bus_t.eva_t->ahb_addr;
       *hwrite = eva_bus_t.eva_t->ahb_write;
-      if(eva_bus_t.eva_t->ahb_write)
-	*hwdata = eva_bus_t.eva_t->ahb_data;
+      //if(eva_bus_t.eva_t->ahb_write)
+      // 	*hwdata = eva_bus_t.eva_t->ahb_data;
 
       eva_bus_t.ahb_fsm = EVA_AHB_NONSEQ;
+
+#ifdef EVA_DEBUG
+      fprintf(stderr," @AHB [IDLE] addr: 0x%8x data: 0x%8x write: %x\n",
+	      eva_bus_t.eva_t->ahb_addr, eva_bus_t.eva_t->ahb_data , eva_bus_t.eva_t->ahb_write);
+#endif
     }
     break;
   case EVA_AHB_NONSEQ:
@@ -85,11 +96,12 @@ void eva_ahb_bus_func_o( svBitVecVal *htrans,
       *hwdata = eva_bus_t.eva_t->ahb_data;
     if(eva_bus_t.hready){
       *htrans = 0;
-      if(eva_bus_t.eva_t->ahb_write)
-	eva_bus_t.ahb_fsm = EVA_AHB_IDLE;
-      else
-	eva_bus_t.ahb_fsm = EVA_AHB_SEQ;
+      eva_bus_t.ahb_fsm = EVA_AHB_SEQ;
     }
+#ifdef EVA_DEBUG
+      fprintf(stderr," @AHB [NONSEQ] addr: 0x%8x data: 0x%8x write: %x hready: %x\n",
+	      eva_bus_t.eva_t->ahb_addr, eva_bus_t.eva_t->ahb_data , eva_bus_t.eva_t->ahb_write, eva_bus_t.hready);
+#endif
     break;
   case EVA_AHB_SEQ:
     if(eva_bus_t.hready){
@@ -99,6 +111,10 @@ void eva_ahb_bus_func_o( svBitVecVal *htrans,
 
       eva_bus_t.eva_t->ahb_sync = EVA_SYNC_ACK;
     }
+#ifdef EVA_DEBUG
+      fprintf(stderr," @AHB [SEQ] addr: 0x%8x data: 0x%8x write: %x hready: %x\n",
+	      eva_bus_t.eva_t->ahb_addr, eva_bus_t.eva_t->ahb_data , eva_bus_t.eva_t->ahb_write, eva_bus_t.hready);
+#endif
     break;
   default:
     fprintf(stderr, " @EVA AHB FSM error status detected !\n");  

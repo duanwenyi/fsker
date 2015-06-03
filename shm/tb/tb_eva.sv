@@ -260,6 +260,7 @@ module TB_EVA(/*AUTOARG*/
      end
 
    initial begin
+      @(posedge hrest_n);
       eva_hdl_init();
    end
    

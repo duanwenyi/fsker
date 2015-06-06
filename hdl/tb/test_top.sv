@@ -141,8 +141,7 @@ module TH;
 			   .hrst_n	(hrest_n)
 			   );
 
-   IVS_TOP U_IVS_TOP(/*AUTOINST*/
-		     // Outputs
+   IVS_TOP U_IVS_TOP(// Outputs
 		     .hready_out	(hready_in),
 		     .hresp		(hresp[1:0]),
 		     .hrdata		(hrdata[31:0]),
@@ -159,7 +158,17 @@ module TH;
 		     .hprot		(hprot[3:0]),
 		     .hready_in		(hready_out)
 		     );
-   
+
+   EVA_MEM_WRAP #(32,64,1) U_RAM32x64(// Outputs
+				      .rdata		(rdata),
+				      // Inputs
+				      .clk		(hclk),
+				      .rst_n		(hrest_n),
+				      .rd		(rd),
+				      .we		(we),
+				      .addr		(addr),
+				      .wdata		(wdata)
+				      );
    
 endmodule // TH
 

@@ -1,4 +1,6 @@
 #include "eva_hdl_drv.h"
+#include "vpi_user.h"
+#include "vpi_user_cds.h"
 #include <string.h>
 
 EVA_HDL_t eva_bus_t;
@@ -417,3 +419,96 @@ void eva_axi_wr_func_o( svBit  *awready,
 
 }
 
+int evaScopeGet(char *path){
+  vpiHandle   net;
+  s_vpi_value val;
+
+  net = vpi_handle_by_name(path, NULL);
+
+  if( net == NULL){
+    fprintf(stderr,"@evaScopeGet: %s  not exist !\n", path);
+    return 0;
+  }
+
+  int Vector_size = vpi_get(vpiSize, net);
+
+  if(Vector_size > 32){
+    fprintf(stderr,"@evaScopeGet: %s vector size %d > 32 not support !\n", path, Vector_size);
+    return 0;
+  }{
+    val.format = vpiIntVal;
+    vpi_get_value(net, & val);
+
+    return val.value.integer;
+  }
+  
+}
+
+void evaScopeGetHandle(){
+  uint32_t val;
+  if( ((eva_bus_t.eva_t->resv & EVA_WAIT_SYNC_MSK) == EVA_WAIT_SYNC_MSK) &&
+      (eva_bus_t.waitMarkEnable == 0)
+      ){
+    eva_bus_t.fp = fopen("./evaScopeGet.txt","r");
+    if(eva_bus_t.fp == NULL){
+      vpi_printf("@evaScopeGetHandle: Open file ./evaScopeGet.txt FAILED !\n");
+      return ;
+    }
+    
+    fscanf(eva_bus_t.fp,"%s %x %d", eva_bus_t.scopePath, &eva_bus_t.scopeValue, &eva_bus_t.scopeMode);
+    if(eva_bus_t.scopeMode == 1)
+      fprintf(stderr,"@evaScopeGetHandle +wait: %s == %x\n", eva_bus_t.scopePath, eva_bus_t.scopeValue);
+    else
+      fprintf(stderr,"@evaScopeGetHandle +wait: %s != %x\n", eva_bus_t.scopePath, eva_bus_t.scopeValue);
+
+    fclose(eva_bus_t.fp);
+
+    eva_bus_t.waitMarkEnable = 1;
+  }
+
+  if( eva_bus_t.waitMarkEnable == 1 ){
+    val = evaScopeGet(eva_bus_t.scopePath);
+    if(eva_bus_t.scopeMode == EVA_SCOPE_CMP_MODE_EQUAL ){
+      if(val == eva_bus_t.scopeValue){
+	eva_bus_t.eva_t->resv = eva_bus_t.eva_t->resv & (~EVA_WAIT_SYNC_MSK);
+	eva_bus_t.waitMarkEnable = 0;
+	fprintf(stderr,"@evaScopeGetHandle +wait: %s == %x OK\n", eva_bus_t.scopePath, eva_bus_t.scopeValue);
+      }
+    }else{
+      if(val != eva_bus_t.scopeValue){
+	eva_bus_t.eva_t->resv = eva_bus_t.eva_t->resv & (~EVA_WAIT_SYNC_MSK);
+	eva_bus_t.waitMarkEnable = 0;
+	fprintf(stderr,"@evaScopeGetHandle +wait: %s != %x OK\n", eva_bus_t.scopePath, eva_bus_t.scopeValue);
+      }
+    }
+  }
+
+}
+
+static s_vpi_systf_data systfList[] = {
+  {vpiSysTask, 0, "$evaScopeGetHandle", evaScopeGetHandle, 0, 0, 0},
+  {0},
+};
+
+void setup_eva_callbacks()
+{
+  p_vpi_systf_data systf_data_p = &(systfList[0]);
+
+  while (systf_data_p->type)
+    {
+      vpi_register_systf(systf_data_p++);
+      if (vpi_chk_error(NULL))
+        {
+          vpi_printf("Error occured while setting up user %s\n",
+                     "defined system tasks and functions.");
+          return;
+        }
+    }
+}
+
+
+void (*vlog_startup_routines[VPI_MAXARRAY])() =
+{
+  setup_eva_callbacks,
+  0 /*** final entry must be 0 ***/
+};

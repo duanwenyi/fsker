@@ -164,3 +164,32 @@ void eva_drv_pause(){
   }
 
 }
+
+void evaScopeWait(char *path, uint32_t value, uint32_t mode ){
+  /*
+    path like "top.module.wire"
+    value
+    mode : 1: be equal to out  0: be not equal to out
+   */
+  FILE *fp = fopen("./evaScopeGet.txt","w");
+  int   tim = 0;
+  if(fp == NULL){
+    fprintf(stderr, "@evaScopeWait: Open file ./evaScopeGet.txt FAILED !\n");
+    return ;
+  }
+  fprintf(fp,"%s 0x%x %d\n", path, value, mode);
+  fclose(fp);
+
+  eva_t->resv = eva_t->resv | EVA_WAIT_SYNC_MSK;
+  
+  while( ((eva_t->resv & EVA_WAIT_SYNC_MSK) == EVA_WAIT_SYNC_MSK)){
+    usleep(1);
+    tim++;
+  }
+
+  if(mode == 1){
+    fprintf(stderr,"OK @wait %s == 0x%x : after %dus\n", path, value, tim);
+  }else{
+    fprintf(stderr,"OK @wait %s != 0x%x : after %dus\n", path, value, tim);
+  }
+}

@@ -20,6 +20,8 @@ int main(int argc, char **argv){
   rd_val = eva_cpu_rd(0x108);
   fprintf(stderr," read addr 0x108:  0x%x\n", rd_val);
 
+  evaScopeWait( "TH.U_IVS_TOP.U_IVS_SLV.cfg_par2", 0xFFFF0000, 1 );
+
   eva_drv_stop();
 
   return 0;

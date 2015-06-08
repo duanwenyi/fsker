@@ -276,6 +276,9 @@ module TB_EVA(/*AUTOARG*/
 	end
      end
 
-
+   always @(posedge aclk)
+     if(arest_n) begin
+	$evaScopeGetHandle;
+     end
    
 endmodule // TB_EVA

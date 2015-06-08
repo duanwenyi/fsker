@@ -9,6 +9,7 @@
 #define EVA_AHB_SEQ     3
 
 #define EVA_AXI_MAX_PORT 4
+#define EVA_SCOPE_CMP_MODE_EQUAL 1
 
 // AXI Port Cell
 typedef struct AXI_PCELL{
@@ -90,6 +91,12 @@ typedef struct EVA_HDL{
   uint32_t wdata_3;
   uint32_t wstrb;               // [15:0]
 
+  uint32_t waitMarkEnable;               // [15:0]
+  char     scopePath[256];
+  uint32_t scopeValue;
+  uint32_t scopeMode;  // 1: be equal to handshake  0: be not equal to over
+  FILE    *fp;
+
 }EVA_HDL_t, *EVA_HDL_p;
 
 void eva_hdl_init();
@@ -163,5 +170,8 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 void eva_axi_wr_func_o( svBit  *awready,
 			svBit  *wready
 			);
+
+
+void evaScopeGetHandle();
 
 #endif

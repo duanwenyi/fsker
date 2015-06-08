@@ -80,7 +80,7 @@ void emem_rd_acc_i( void                   *handle,
 }
 
 void emem_rd_acc_o( void                   *handle,
-		    const svOpenArrayHandle data
+		    svOpenArrayHandle       data
 		    ){
   EMEM_UNIT_p sto = (EMEM_UNIT_t *)handle;
 
@@ -94,7 +94,7 @@ void emem_rd_acc_o( void                   *handle,
     ptr = (uint8_t *)&sto->mem[e_addr * sto->LinePerBytes];
     for(cc=0; cc< sto->LinePerBytes; cc++){
       byte_da = ptr[cc];
-      svGetBitArrElemVecVal( data, &byte_da, cc);
+      svPutBitArrElemVecVal( data, &byte_da, cc);
     }
 
   }else{

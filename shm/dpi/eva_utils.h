@@ -38,7 +38,7 @@ void emem_rd_acc_i( void                   *handle,
 		    );
 
 void emem_rd_acc_o( void                   *handle,
-		    const svOpenArrayHandle data
+		    svOpenArrayHandle       data
 		    );
 
 #endif

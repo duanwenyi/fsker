@@ -81,6 +81,7 @@ module EVA_MEM(/*AUTOARG*/
        emem_rd_acc_i( mem,
 		      addr
 		      );
+	
 	#EVA_DLY_U emem_rd_acc_o( mem,
 				  rdata
 				  );

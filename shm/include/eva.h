@@ -32,9 +32,11 @@ C  :               | EVA_BUS_ACK |               | EVA_BUS_PAUSE |
 
 */
 
+#define EVA_WAIT_SYNC_MSK 0x1
+
 typedef struct EVA_BUS_ST {
   uint16_t control;  // 
-  uint16_t resv;    // reserved
+  uint16_t resv;    // reserved  [0]: 1:wait sync
 
   uint32_t ahb_sync;
   uint32_t ahb_write;

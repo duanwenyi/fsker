@@ -1,10 +1,14 @@
 #include "eva_driver.h"
+#include <string.h>
 
 static EVA_BUS_ST_p eva_t = NULL;
 pthread_t eva_axi_wr,eva_axi_rd;
+pthread_t eva_intr;
 
 #define EVA_SAFE_MODE
 //#define EVA_DEBUG
+
+EVA_INTR_REG_t intr_reg;
 
 void eva_cpu_wr(uint32_t addr, uint32_t data){
 #ifdef EVA_SAFE_MODE
@@ -95,6 +99,52 @@ void eva_axi_wr_handler(void){
 
 }
 
+void eva_interrupt_handler(void){
+  memset(&intr_reg, sizeof(EVA_INTR_REG_t) , 0);
+  
+  int  cc = 0;
+  while(1){
+    if(eva_t->intr != 0){
+      fprintf(stderr, " @EVA recieved interrupt : %x  INT MASK[%d %d %d %d - %d %d %d %d]\n", 
+	      eva_t->intr, 
+	      intr_reg.valid[7],intr_reg.valid[6],intr_reg.valid[5],intr_reg.valid[4],
+	      intr_reg.valid[3],intr_reg.valid[2],intr_reg.valid[1],intr_reg.valid[0]
+	      ); 
+      for( cc=0; cc<8; cc++){
+	if( intr_reg.valid[cc] == 1){
+	  if( (eva_t->intr & (1<<cc)) != 0 ){
+	    // excute registered interrupt function
+	    (*intr_reg.func[cc])();
+	    
+	    eva_t->intr = eva_t->intr & (~(1<<cc));
+	  }
+	}
+      }
+    }else{
+      usleep(1);
+    }
+  }
+  
+}
+
+int eva_intr_register(void (*user_func)(), int intr_id){
+  if(intr_reg.valid[intr_id] == 0){
+    intr_reg.func[intr_id]  = user_func;
+    intr_reg.valid[intr_id] = 1;
+    fprintf(stderr, " @EVA intr_register [ID:%d] [BASE:0x%x] is register OK.\n", intr_id, user_func); 
+    return 0;
+  }else{
+    fprintf(stderr, " @EVA intr_register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
+    return 1;
+  }
+
+}
+
+void eva_intr_unregister(int intr_id){
+    intr_reg.func[intr_id]  = NULL;
+    intr_reg.valid[intr_id] = 0;
+}
+
 void eva_drv_init(){
   int ret;
 
@@ -126,6 +176,12 @@ void eva_drv_init(){
   ret = pthread_create(&eva_axi_rd, NULL, (void *)eva_axi_rd_handler, NULL);
   if(ret != 0){
     fprintf(stderr, " @EVA SW AXI read  thread created failed , exit .\n");  
+    exit(EXIT_FAILURE);  
+  }
+
+  ret = pthread_create(&eva_intr, NULL, (void *)eva_interrupt_handler, NULL);
+  if(ret != 0){
+    fprintf(stderr, " @EVA SW Interrupt Handle  thread created failed , exit .\n");  
     exit(EXIT_FAILURE);  
   }
 

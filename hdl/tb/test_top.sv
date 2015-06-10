@@ -132,6 +132,13 @@ module TH;
 	      .wstrb		(wstrb		)
 	      );
 
+   TB_EVA_INTR U_EVA_INTR(
+			  // Inputs
+			  .clk			(hclk),
+			  .rst_n		(hrest_n),
+			  .interrupt		({7'b0, U_IVS_TOP.U_IVS_SLV.sw_rst})
+			  );
+   
    
    IVS_CLK_GEN ivs_clk_gen(
 			   // Outputs
@@ -177,3 +184,4 @@ endmodule // TH
 // verilog-library-files:("../rtl/ivs_top.v")
 // verilog-library-extensions:(".v" ".h")
 // End:
+

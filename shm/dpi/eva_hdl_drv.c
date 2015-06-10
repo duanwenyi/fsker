@@ -419,6 +419,12 @@ void eva_axi_wr_func_o( svBit  *awready,
 
 }
 
+void eva_hdl_intr( const svBitVecVal *intr ){
+  uint8_t intr_s = *intr & 0xFF;
+  if(intr_s)
+    eva_bus_t.eva_t->intr = intr_s;
+}
+
 int evaScopeGet(char *path){
   vpiHandle   net;
   s_vpi_value val;

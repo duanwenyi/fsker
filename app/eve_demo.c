@@ -1,10 +1,17 @@
 #include "eva_driver.h"
 
+void intr_sample(){
+  fprintf(stderr,"I'm a lucky dog !\n");
+}
+
 int main(int argc, char **argv){
   int rd_val;
 
+
   eva_drv_init();
   
+  int ret = eva_intr_register((void *)intr_sample, 0);
+
   eva_cpu_wr(0x4,1);
 
   eva_cpu_wr(0x0, 0x7);

@@ -12,4 +12,10 @@ void eva_axi_wr_handler(void);
 void eva_cpu_wr(uint32_t addr, uint32_t data);
 uint32_t eva_cpu_rd(uint32_t addr);
 
+typedef struct EVA_INTR_REG {
+  uint32_t valid[8];
+  void (*func[8])(void);
+}EVA_INTR_REG_t;
+
+
 #endif

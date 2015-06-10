@@ -171,6 +171,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 			svBit  *wready
 			);
 
+void eva_hdl_intr( const svBitVecVal *intr );
 
 void evaScopeGetHandle();
 

@@ -9,7 +9,8 @@ CXX         = g++
 DEFINES     = 
 CFLAGS      = -pipe -O2 -Wall -W -m32 $(DEFINES) -lpthread
 CXXFLAGS    = -pipe -O2 -Wall -W -m32 $(DEFINES) -lpthread
-INCPATH     = -I$(EVA_PATH) -I$(EVA_PRO_PATH)/shm/dpi -I$(VCS_HOME)/include -I$(CDSHOME)/tools/include
+INCPATH     = -I$(EVA_PATH) -I$(EVA_PRO_PATH)/shm/dpi -I$(IES_HOME)/tools/include
+#-I$(VCS_HOME)/include
 LINK        = gcc
 LFLAGS      = -Wl -lpthread
 LIBS        = 

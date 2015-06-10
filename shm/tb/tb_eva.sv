@@ -282,3 +282,32 @@ module TB_EVA(/*AUTOARG*/
      end
    
 endmodule // TB_EVA
+
+
+module TB_EVA_INTR(/*AUTOARG*/
+   // Inputs
+   clk, rst_n, interrupt
+   );
+   import "DPI-C" function void eva_hdl_intr( input bit [7:0]   intr);
+
+   input          clk;
+   input 	  rst_n;
+   
+   input [7:0] 	  interrupt;
+
+   reg [7:0] 	  intr_ff;
+
+   always @(posedge clk)
+     if(~rst_n)
+       intr_ff   <= 8'b0;
+     else
+       intr_ff   <= interrupt;
+
+   // calculate the rose trigger
+   wire [7:0] 	  intr_msi = interrupt & ~intr_ff;
+
+   always @(posedge clk)
+     if(rst_n)
+       eva_hdl_intr( intr_msi );
+   
+endmodule // TB_EVA_INTR

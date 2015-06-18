@@ -1,6 +1,10 @@
 #include "eva_hdl_drv.h"
 #include "vpi_user.h"
+
+#ifndef USING_VCS_COMPILER
 #include "vpi_user_cds.h"
+#endif
+
 #include <string.h>
 
 EVA_HDL_t eva_bus_t;
@@ -491,6 +495,7 @@ void evaScopeGetHandle(){
 
 }
 
+#ifndef USING_VCS_COMPILER
 static s_vpi_systf_data systfList[] = {
   {vpiSysTask, 0, "$evaScopeGetHandle", evaScopeGetHandle, 0, 0, 0},
   {0},
@@ -518,3 +523,4 @@ void (*vlog_startup_routines[VPI_MAXARRAY])() =
   setup_eva_callbacks,
   0 /*** final entry must be 0 ***/
 };
+#endif

@@ -23,13 +23,14 @@
 module TB_EVA(/*AUTOARG*/
    // Outputs
    htrans, hwrite, haddr, hwdata, hsize, hburst, hprot, hready_out,
-   arready, rvalid, rid, rdata, rlast, rresp, awready, wready,
+   arready, rvalid, rid, rdata, rlast, rresp, awready, wready, bvalid,
+   bresp, bid,
    // Inputs
-   hclk, hrest_n, hready_in, hresp, hrdata, aclk, arest_n, arvalid,
-   arid, araddr, arlen, arsize, arburst, arlock, arcache, arport,
-   arregion, arqos, aruser, rready, awvalid, awid, awaddr,
-   awlen, awsize, awburst, awlock, awcache, awport, awregion, awqos,
-   awuser, wvalid, wlast, wid, wdata, wstrb
+   hclk, hrest_n, aclk, arest_n, hready_in, hresp, hrdata, arvalid,
+   arid, araddr, arlen, arsize, arburst, arlock, arcache, arprot,
+   arregion, arqos, aruser, rready, awvalid, awid, awaddr, awlen,
+   awsize, awburst, awlock, awcache, awprot, awregion, awqos, awuser,
+   wvalid, wlast, wid, wdata, wstrb, bready
    );
 
    parameter EVA_DLY_U = 0.1;
@@ -57,7 +58,7 @@ module TB_EVA(/*AUTOARG*/
 						   input bit [1:0]  arburst,     // [1:0]  2'b01
 						   input bit        arlock,
 						   input bit [3:0]  arcache,     // [3:0]
-						   input bit [2:0]  arport,      // [2:0]
+						   input bit [2:0]  arprot,      // [2:0]
 						   input bit [3:0]  arregion,    // [3:0]
 						   input bit [3:0]  arqos,       // [3:0]
 						   input bit [7:0]  aruser,      // [7:0]
@@ -85,7 +86,7 @@ module TB_EVA(/*AUTOARG*/
 						   input bit [1:0]  awburst, // [1:0]  2'b01
 						   input bit 	    awlock,
 						   input bit [3:0]  awcache, // [3:0]
-						   input bit [2:0]  awport, // [2:0]
+						   input bit [2:0]  awprot, // [2:0]
 						   input bit [3:0]  awregion, // [3:0]
 						   input bit [3:0]  awqos, // [3:0]
 						   input bit [7:0]  awuser, // [7:0]
@@ -115,7 +116,7 @@ module TB_EVA(/*AUTOARG*/
    output bit 		    hwrite;      
    output bit [31:0] 	    haddr;       
    output bit [31:0] 	    hwdata;      
-   output bit [1:0] 	    hsize;     
+   output bit [2:0] 	    hsize;     
    output bit [2:0] 	    hburst;    
    output bit [3:0] 	    hprot;     
    output bit 		    hready_out;
@@ -136,7 +137,7 @@ module TB_EVA(/*AUTOARG*/
    input bit [1:0] 	    arburst;     // [1:0]  2'b01 
    input bit 		    arlock;                      
    input bit [3:0] 	    arcache;     // [3:0]        
-   input bit [2:0] 	    arport;      // [2:0]        
+   input bit [2:0] 	    arprot;      // [2:0]        
    input bit [3:0] 	    arregion;    // [3:0]        
    input bit [3:0] 	    arqos;       // [3:0]        
    input bit [7:0] 	    aruser;      // [7:0]        
@@ -158,7 +159,7 @@ module TB_EVA(/*AUTOARG*/
    input bit [1:0] 	    awburst;     // [1:0]  2'b01  
    input bit 		    awlock;                       
    input bit [3:0] 	    awcache;     // [3:0]         
-   input bit [2:0] 	    awport;      // [2:0]         
+   input bit [2:0] 	    awprot;      // [2:0]         
    input bit [3:0] 	    awregion;    // [3:0]         
    input bit [3:0] 	    awqos;       // [3:0]         
    input bit [7:0] 	    awuser;      // [7:0]         
@@ -170,12 +171,22 @@ module TB_EVA(/*AUTOARG*/
    input bit [127:0] 	    wdata;            // [31:0]    
    input bit [15:0] 	    wstrb ;   // [15:0] 
 
+   output 		    bvalid;
+   output [ 1:0] 	    bresp;
+   output [ 3:0] 	    bid;
+   input 		    bready;
+   
 
    bit 			    stop;
 
-   assign hsize  = 2'b10;
+   assign hsize  = 3'b10;
    assign hburst = 3'b0;
    assign hprot  = 4'b0;
+
+   assign bvalid = 1'b1;
+   assign bresp  = 2'b0;
+   assign bid    = 4'b0;
+   
 
    assign hready_out = hready_in;
    
@@ -206,7 +217,7 @@ module TB_EVA(/*AUTOARG*/
 			   arburst,     // [1:0]  2'b01
 			   arlock,
 			   arcache,     // [3:0]
-			   arport,      // [2:0]
+			   arprot,      // [2:0]
 			   arregion,    // [3:0]
 			   arqos,       // [3:0]
 			   aruser,      // [7:0]
@@ -238,7 +249,7 @@ module TB_EVA(/*AUTOARG*/
 			   awburst, // [1:0]  2'b01
 			   awlock,
 			   awcache, // [3:0]
-			   awport, // [2:0]
+			   awprot, // [2:0]
 			   awregion, // [3:0]
 			   awqos, // [3:0]
 			   awuser, // [7:0]
@@ -284,7 +295,7 @@ module TB_EVA(/*AUTOARG*/
 endmodule // TB_EVA
 
 
-module TB_EVA_INTR(/*AUTOARG*/
+module TB_EVA_INTR(
    // Inputs
    clk, rst_n, interrupt
    );

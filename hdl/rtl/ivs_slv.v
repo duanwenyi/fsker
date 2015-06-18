@@ -17,7 +17,7 @@ module IVS_SLV(/*AUTOARG*/
    input 		hwrite;      
    input [31:0] 	haddr;       
    input [31:0] 	hwdata;      
-   input [1:0] 		hsize;     
+   input [2:0] 		hsize;     
    input [2:0] 		hburst;    
    input [3:0] 		hprot;     
    input 		hready_in;

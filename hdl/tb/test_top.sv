@@ -13,7 +13,7 @@ module TH;
    wire 	    hwrite;      
    wire [31:0] 	    haddr;       
    wire [31:0] 	    hwdata;      
-   wire [1:0] 	    hsize;     
+   wire [2:0] 	    hsize;     
    wire [2:0] 	    hburst;    
    wire [3:0] 	    hprot;     
    wire 	    hready_out;
@@ -34,7 +34,7 @@ module TH;
    wire [1:0] 	    arburst;     // [1:0]  2'b01 
    wire 	    arlock;                      
    wire [3:0] 	    arcache;     // [3:0]        
-   wire [2:0] 	    arport;      // [2:0]        
+   wire [2:0] 	    arprot;      // [2:0]        
    wire [3:0] 	    arregion;    // [3:0]        
    wire [3:0] 	    arqos;       // [3:0]        
    wire [7:0] 	    aruser;      // [7:0]        
@@ -56,7 +56,7 @@ module TH;
    wire [1:0] 	    awburst;     // [1:0]  2'b01  
    wire 	    awlock;                       
    wire [3:0] 	    awcache;     // [3:0]         
-   wire [2:0] 	    awport;      // [2:0]         
+   wire [2:0] 	    awprot;      // [2:0]         
    wire [3:0] 	    awregion;    // [3:0]         
    wire [3:0] 	    awqos;       // [3:0]         
    wire [7:0] 	    awuser;      // [7:0]         
@@ -67,6 +67,11 @@ module TH;
    wire [3:0] 	    wid;                // [3:0]  
    wire [127:0]     wdata;            // [31:0]    
    wire [15:0] 	    wstrb ;   // [15:0] 
+
+   wire 	    bvalid;
+   wire [ 1:0] 	    bresp;
+   wire [ 3:0] 	    bid;
+   wire 	    bready;
 
    //Replace regexp (default \(\w+\)\(,\) -> \1^I^I(\1^I),^J): 
    TB_EVA eva(// Outputs
@@ -104,7 +109,7 @@ module TH;
 	      .arburst		(arburst	),
 	      .arlock		(arlock		),
 	      .arcache		(arcache	),
-	      .arport		(arport		),
+	      .arprot		(arprot		),
 
 	      .arregion		(arregion	),
 	      .arqos		(arqos		),
@@ -120,7 +125,7 @@ module TH;
 	      .awburst		(awburst	),
 	      .awlock		(awlock		),
 	      .awcache		(awcache	),
-	      .awport		(awport		),
+	      .awprot		(awprot		),
 	      .awregion		(awregion	),
 	      .awqos		(awqos		),
 

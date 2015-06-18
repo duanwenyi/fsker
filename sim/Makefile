@@ -15,6 +15,17 @@ LINK        = gcc
 LFLAGS      = -Wl -lpthread
 LIBS        = 
 
+# HDL comple options when using VCS
+VCS_SIM_EXEC   = ./simv_exec
+VCS_CMPL_OPTS  = -sverilog +v2k +libext+.v+.sv +verilog2001ext+.v +vcs+lic+wait +plusarg_save +notimingcheck +nospecify -timescale=1ns/10ps -debug
+VCS_CMPL_OPTS += +incdir+$(VCS_HOME)/etc/vmm -P $(EVA_PRO_PATH)/shm/tb/eva_vpi.tab +vpi
+VCS_CMPL_OPTS += -Mdir=./output/vmm_test_scrc -o $(VCS_SIM_EXEC) -l ./output/vmm_test.cmp_log
+VCS_CMPL_OPTS += +vpdfile+simv.vpd
+
+VCS_RUN_OPTS   = -l ./simv.log -ucli -i vcs_sim.tcl
+
+
+
 ## HDL compile options
 TOP_MODULE    = TH
 DUT_CMPL_OPTS = -sv -update
@@ -35,15 +46,23 @@ dpi:
 
 svtb:
 	$(CC) -Wall -g -fPIC -m32 $(EVA_SRC) $(INCPATH) -shared -o libdpi.so
-#	vcs -f project.f libdpi.so $(DUT_CMP_OPTS)
 	ncvlog -f project.f $(DUT_CMPL_OPTS)
 	ncelab $(DUT_ELAB_OPTS)
-
 run:
 	ncsim $(DUT_RUN_OPTS)
+
+
+sstb:
+	$(CC) -Wall -g -fPIC -m32 $(EVA_SRC) $(INCPATH) -DUSING_VCS_COMPILER -shared -o libdpi.so
+	@mkdir -p output
+	vcs -f project.f libdpi.so $(VCS_CMPL_OPTS)
+
+srun:
+	$(VCS_SIM_EXEC) $(VCS_RUN_OPTS)
+
 
 ipcs:
 	ipcs -m |grep $$USER |awk '{print $$2}' | xargs ipcrm -m
 
 clean:
-	rm *.fsdb INCA_libs libdpi.so *.log eva_demo *.shm *.key evaScopeGet.txt -rf
+	rm *.fsdb INCA_libs libdpi.so *.log eva_demo *.shm *.key evaScopeGet.txt output simv_exec* -rf

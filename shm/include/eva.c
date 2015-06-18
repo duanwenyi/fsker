@@ -23,7 +23,8 @@ void *eva_map(int do_init){
   if(do_init){
     bus = (EVA_BUS_ST_t *)shm;
 
-    //bus->resv = 0;
+    bus->resv       = 0;
+    bus->intr       = 0;
     bus->ahb_sync   = EVA_SYNC_ACK;
     bus->axi_w_sync = EVA_SYNC_ACK;
     bus->axi_r_sync = EVA_SYNC_ACK;

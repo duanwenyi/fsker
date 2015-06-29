@@ -10,7 +10,7 @@ int main(int argc, char **argv){
 
   eva_drv_init();
   
-  int ret = eva_intr_register((void *)intr_sample, 0);
+  int ret = eva_intr_register(intr_sample, 0);
 
   eva_cpu_wr(0x4,1);
 

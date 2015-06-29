@@ -1,5 +1,6 @@
-#include "eva_driver.h"
 #include <string.h>
+#include <pthread.h>
+#include "eva_driver.h"
 
 static EVA_BUS_ST_p eva_t = NULL;
 pthread_t eva_axi_wr,eva_axi_rd;
@@ -55,7 +56,11 @@ uint32_t eva_cpu_rd(uint32_t addr){
   return eva_t->ahb_data;
 }
 
+#ifdef __cplusplus
+void *eva_axi_rd_handler(void *){
+#else
 void eva_axi_rd_handler(void){
+#endif
   
   uint32_t *ptr;
   while(1){
@@ -75,10 +80,16 @@ void eva_axi_rd_handler(void){
     }
   }
 
+#ifdef __cplusplus
+  return NULL;
+#endif
 }
 
+#ifdef __cplusplus
+void *eva_axi_wr_handler(void *){
+#else
 void eva_axi_wr_handler(void){
-  
+#endif  
   uint32_t *ptr;
   while(1){
     if(eva_t->axi_w_sync == EVA_SYNC){
@@ -97,9 +108,16 @@ void eva_axi_wr_handler(void){
     }
   }
 
+#ifdef __cplusplus
+  return NULL;
+#endif
 }
 
+#ifdef __cplusplus
+void *eva_interrupt_handler(void *){
+#else
 void eva_interrupt_handler(void){
+#endif
   memset(&intr_reg, sizeof(EVA_INTR_REG_t) , 0);
   
   int  cc = 0;
@@ -125,6 +143,9 @@ void eva_interrupt_handler(void){
     }
   }
   
+#ifdef __cplusplus
+  return NULL;
+#endif
 }
 
 int eva_intr_register(void (*user_func)(), int intr_id){
@@ -148,7 +169,7 @@ void eva_intr_unregister(int intr_id){
 void eva_drv_init(){
   int ret;
 
-  eva_t = eva_map(0);
+  eva_t = (EVA_BUS_ST_t *)eva_map(0);
   if( eva_t->control != EVA_BUS_INIT){
     fprintf(stderr, " @EVA HDL is not detected start first , exit .\n");  
     exit(EXIT_FAILURE);  
@@ -167,6 +188,26 @@ void eva_drv_init(){
     fprintf(stderr, " @EVA HDL Handshake Over , set ALIVE OK.\n");  
   }
 
+#ifdef __cplusplus
+  ret = pthread_create(&eva_axi_wr, NULL, eva_axi_wr_handler, NULL);
+  if(ret != 0){
+    fprintf(stderr, " @EVA SW AXI write thread created failed , exit .\n");  
+    exit(EXIT_FAILURE);  
+  }
+  
+  ret = pthread_create(&eva_axi_rd, NULL, eva_axi_rd_handler, NULL);
+  if(ret != 0){
+    fprintf(stderr, " @EVA SW AXI read  thread created failed , exit .\n");  
+    exit(EXIT_FAILURE);  
+  }
+
+  ret = pthread_create(&eva_intr, NULL, eva_interrupt_handler, NULL);
+  if(ret != 0){
+    fprintf(stderr, " @EVA SW Interrupt Handle  thread created failed , exit .\n");  
+    exit(EXIT_FAILURE);  
+  }
+#else
+
   ret = pthread_create(&eva_axi_wr, NULL, (void *)eva_axi_wr_handler, NULL);
   if(ret != 0){
     fprintf(stderr, " @EVA SW AXI write thread created failed , exit .\n");  
@@ -184,6 +225,7 @@ void eva_drv_init(){
     fprintf(stderr, " @EVA SW Interrupt Handle  thread created failed , exit .\n");  
     exit(EXIT_FAILURE);  
   }
+#endif
 
   fprintf(stderr, " @EVA SW initial OVER @0x%8x\n",(uint32_t)eva_t);  
 }

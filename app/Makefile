@@ -23,6 +23,9 @@ BIN         = eva_demo
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCPATH) -c $< -o $@
 
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) $(INCPATH) -c $< -o $@
+
 $(BIN): $(OBJECTS) $(EVA_OBJ)
 	$(LINK) $^ $(LFLAGS) $(INCPATH) $(LIBS) -o $@
 	\rm $(OBJECTS) $(EVA_OBJ) -rf

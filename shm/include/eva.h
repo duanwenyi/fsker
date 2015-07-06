@@ -66,4 +66,7 @@ void eva_unmap();
 
 void eva_destory();
 
+/* Optimization barrier */  
+#define barrier() __asm__ __volatile__("": : :"memory")  
+
 #endif

@@ -152,9 +152,9 @@ void eva_axi_rd_func_i( const svBit        arvalid,
   eva_bus_t.arvalid		=  arvalid;   
   eva_bus_t.arid		= *arid       & 0xF;      
   eva_bus_t.araddr_low		= *araddr_low;
-  eva_bus_t.araddr_high	= *araddr_high;
+  eva_bus_t.araddr_high 	= *araddr_high;
   eva_bus_t.arlen		= *arlen      & 0x3F;     
-  eva_bus_t.arsize		= *arsize     & 0x3;    
+  eva_bus_t.arsize		= *arsize     & 0x7;    
   eva_bus_t.arburst		= *arburst    & 0x7;   
   eva_bus_t.arlock		=  arlock;
   eva_bus_t.arcache		= *arcache    & 0xF;   
@@ -241,10 +241,11 @@ void eva_axi_rd_func_o( svBit             *arready,
 	eva_bus_t.eva_t->axi_r_addr = eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr;
 	eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr += 16;
 
-	eva_bus_t.eva_t->axi_r_sync = 1;
+	barrier();
+	eva_bus_t.eva_t->axi_r_sync = EVA_SYNC;
 	
 	timeout = 0;
-	while(eva_bus_t.eva_t->axi_r_sync == 1){
+	while(eva_bus_t.eva_t->axi_r_sync == EVA_SYNC){
 	  timeout++;
 	  if(timeout > 100000000){ // 1 million
 	    fprintf(stderr," @EVA HDL axi_r_sync timeout , check SYSTEM !");
@@ -343,22 +344,22 @@ void eva_axi_wr_func_o( svBit  *awready,
   // PART I : COMMAND PROCESS
   if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_PORT) && eva_bus_t.axi_pre_awready){
     
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].addr_base  = eva_bus_t.awaddr_low;
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].cur_addr   = eva_bus_t.awaddr_low;
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].length     = eva_bus_t.awlen + 1;
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].remain_len = eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].length;
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].burst      = eva_bus_t.awburst;
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].size       = eva_bus_t.awsize;
+    eva_bus_t.axi_w[eva_bus_t.awid].addr_base  = eva_bus_t.awaddr_low;
+    eva_bus_t.axi_w[eva_bus_t.awid].cur_addr   = eva_bus_t.awaddr_low;
+    eva_bus_t.axi_w[eva_bus_t.awid].length     = eva_bus_t.awlen + 1;
+    eva_bus_t.axi_w[eva_bus_t.awid].remain_len = eva_bus_t.axi_w[eva_bus_t.awid].length;
+    eva_bus_t.axi_w[eva_bus_t.awid].burst      = eva_bus_t.awburst;
+    eva_bus_t.axi_w[eva_bus_t.awid].size       = eva_bus_t.awsize;
 
-    if( (eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].burst != 4) || (eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].size != 1) ){
+    if( (eva_bus_t.axi_w[eva_bus_t.awid].burst != 1) || (eva_bus_t.axi_w[eva_bus_t.awid].size != 4) ){
       fprintf(stderr," @EVA HDL not support parameter detected in AXI write command  burst %x , size %x",
-	      eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].burst, eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].size );
+	      eva_bus_t.axi_w[eva_bus_t.awid].burst, eva_bus_t.axi_w[eva_bus_t.awid].size );
 
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].burst      = 4;
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].size       = 1;
+      eva_bus_t.axi_w[eva_bus_t.awid].burst      = 1;  // INCR
+      eva_bus_t.axi_w[eva_bus_t.awid].size       = 4;  // 16bytes
     }
 
-    eva_bus_t.axi_w[eva_bus_t.axi_wcmd_nums].valid      = 1;
+    eva_bus_t.axi_w[eva_bus_t.awid].valid      = 1;
     eva_bus_t.axi_cur_wlock = rand()%20 + 1;
     
     eva_bus_t.axi_wcmd_nums++;
@@ -391,10 +392,11 @@ void eva_axi_wr_func_o( svBit  *awready,
     eva_bus_t.eva_t->axi_w_data2 = eva_bus_t.wdata_2;
     eva_bus_t.eva_t->axi_w_data3 = eva_bus_t.wdata_3;
 
-    eva_bus_t.eva_t->axi_w_sync = 1;
+    barrier();
+    eva_bus_t.eva_t->axi_w_sync = EVA_SYNC;
 
     timeout = 0;
-    while(eva_bus_t.eva_t->axi_w_sync == 1){
+    while(eva_bus_t.eva_t->axi_w_sync == EVA_SYNC){
       timeout++;
       if(timeout > 100000000){ // 1 million
 	fprintf(stderr," @EVA HDL axi_w_sync timeout , check SYSTEM !");

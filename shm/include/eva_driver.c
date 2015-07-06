@@ -20,6 +20,7 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
   eva_t->ahb_write = 1;
   eva_t->ahb_addr  = addr;
   eva_t->ahb_data  = data;
+  barrier();
   eva_t->ahb_sync  = EVA_SYNC;
 #ifdef EVA_DEBUG
   fprintf(stderr," @AHB write addr: 0x%8x  data: 0x%8x\n",eva_t->ahb_addr, eva_t->ahb_data );
@@ -40,6 +41,7 @@ uint32_t eva_cpu_rd(uint32_t addr){
 #endif
   eva_t->ahb_write = 0;
   eva_t->ahb_addr  = addr;
+  barrier();
   eva_t->ahb_sync  = EVA_SYNC;
 
 #ifdef EVA_DEBUG
@@ -74,6 +76,7 @@ void eva_axi_rd_handler(void){
       ptr++;
       eva_t->axi_r_data3 = *ptr;
 
+      barrier();
       eva_t->axi_r_sync = EVA_SYNC_ACK;
     }else{
       usleep(1);
@@ -93,15 +96,78 @@ void eva_axi_wr_handler(void){
   uint32_t *ptr;
   while(1){
     if(eva_t->axi_w_sync == EVA_SYNC){
-      ptr = (uint32_t *)eva_t->axi_w_addr;
-      *ptr = eva_t->axi_w_data0;
-      ptr++;
-      *ptr = eva_t->axi_w_data1;
-      ptr++;
-      *ptr = eva_t->axi_w_data2;
-      ptr++;
-      *ptr = eva_t->axi_w_data3;
+      if(eva_t->axi_w_strb == 0xFFFF){
+	uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
+	*ptr = eva_t->axi_w_data0;
+	ptr++;
+	*ptr = eva_t->axi_w_data1;
+	ptr++;
+	*ptr = eva_t->axi_w_data2;
+	ptr++;
+	*ptr = eva_t->axi_w_data3;
+	
+      }else if(eva_t->axi_w_strb == 0xFF){
+	uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
+	*ptr = eva_t->axi_w_data0;
+	ptr++;
+	*ptr = eva_t->axi_w_data1;
+      }else{
+	uint8_t * ptr = (uint8_t *)eva_t->axi_w_addr;
+	// DW0
+	if( eva_t->axi_w_strb & 0x1 )
+	  *ptr = eva_t->axi_w_data0;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x2 )
+	  *ptr = (eva_t->axi_w_data0 >> 8 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x4 )
+	  *ptr = (eva_t->axi_w_data0 >> 16 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x8 )
+	  *ptr = (eva_t->axi_w_data0 >> 24 ) & 0xFF;
+	ptr++;
+	// DW1
+	if( eva_t->axi_w_strb & 0x10 )
+	  *ptr = (eva_t->axi_w_data1 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x20 )
+	  *ptr = (eva_t->axi_w_data1 >> 8 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x40 )
+	  *ptr = (eva_t->axi_w_data1 >> 16 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x80 )
+	  *ptr = (eva_t->axi_w_data1 >> 24 ) & 0xFF;
+	ptr++;
+	// DW2
+	if( eva_t->axi_w_strb & 0x100 )
+	  *ptr = (eva_t->axi_w_data2 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x200 )
+	  *ptr = (eva_t->axi_w_data2 >> 8 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x400 )
+	  *ptr = (eva_t->axi_w_data2 >> 16 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x800 )
+	  *ptr = (eva_t->axi_w_data2 >> 24 ) & 0xFF;
+	ptr++;
+	// DW3
+	if( eva_t->axi_w_strb & 0x1000 )
+	  *ptr = (eva_t->axi_w_data3 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x2000 )
+	  *ptr = (eva_t->axi_w_data3 >> 8 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x4000 )
+	  *ptr = (eva_t->axi_w_data3 >> 16 ) & 0xFF;
+	ptr++;
+	if( eva_t->axi_w_strb & 0x8000 )
+	  *ptr = (eva_t->axi_w_data3 >> 24 ) & 0xFF;
+	ptr++;
+      }
 
+      barrier();
       eva_t->axi_r_sync = EVA_SYNC_ACK;
     }else{
       usleep(1);

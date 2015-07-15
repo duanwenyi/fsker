@@ -3,9 +3,9 @@
 
 (setq additional-paths '("/IDE/emacs" "/IDE/emacs/auto-complete" "/IDE/emacs/popup" "/IDE/emacs/fuzzy"))
 (setq load-path (append additional-paths load-path))
-(require 'auto-complete-config)
-(ac-config-default)
-(require 'auto-complete-clang)
+;(require 'auto-complete-config)
+;(ac-config-default)
+;(require 'auto-complete-clang)
 
 (ffap-bindings)
 
@@ -95,6 +95,7 @@ vi style of % jumping to matching brace."
 (bookmark-set "default-bookmark2"))
 
 (global-set-key [C-f1] 'kill-this-buffer)
+(global-set-key [M-f1] 'kill-this-buffer)
 (global-set-key [f1] 'switch-to-buffer)
 (global-set-key [f2] 'buffer-menu)
 
@@ -167,6 +168,7 @@ vi style of % jumping to matching brace."
 (global-set-key [C-delete] 'kill-word)
 (global-set-key [escape] 'keyboard-escape-quit)
 
+(global-set-key [?\C-'] 'revert-buffer)
 (global-set-key [?\C-.] 'ffap-copy-string-as-kill)
 (global-set-key [?\C-/] 'isearch-symbol-at-point)
 

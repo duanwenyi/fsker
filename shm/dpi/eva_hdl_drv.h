@@ -81,6 +81,7 @@ typedef struct EVA_HDL{
   uint32_t awregion;    // [3:0]
   uint32_t awqos;       // [3:0]
   uint32_t awuser;      // [7:0]
+  uint32_t bready;
 
   uint32_t wvalid;
   uint32_t wlast;
@@ -156,6 +157,8 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 			const svBitVecVal *awregion,    // [3:0]
 			const svBitVecVal *awqos,       // [3:0]
 			const svBitVecVal *awuser,      // [7:0]
+
+			const svBit        bready,
 		      
 			const svBit        wvalid,
 			const svBit        wlast,
@@ -168,7 +171,11 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 			);
 
 void eva_axi_wr_func_o( svBit  *awready,
-			svBit  *wready
+			svBit  *wready,
+
+			svBit  *bvalid,
+			svBitVecVal *bresp,
+			svBitVecVal *bid
 			);
 
 void eva_hdl_intr( const svBitVecVal *intr );

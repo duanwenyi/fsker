@@ -41,31 +41,32 @@ module IVS_TOP(/*AUTOARG*/
    
    IVS_SLV U_IVS_SLV(/*AUTOINST*/
 		     // Outputs
-		     .hready_out	(hready_out),
-		     .hresp		(hresp[1:0]),
-		     .hrdata		(hrdata[31:0]),
-		     .cfg_par0		(cfg_par0[31:0]),
-		     .cfg_par1		(cfg_par1[31:0]),
-		     .cfg_par2		(cfg_par2[31:0]),
-		     .cfg_par3		(cfg_par3[31:0]),
-		     .cfg_par4		(cfg_par4[31:0]),
-		     .cfg_par5		(cfg_par5[31:0]),
-		     .cfg_par6		(cfg_par6[31:0]),
-		     .cfg_par7		(cfg_par7[31:0]),
-		     .glb_ctrl		(glb_ctrl[31:0]),
-		     .sw_rst		(sw_rst),
+		     .hready_out	(hready_out	),
+		     .hresp		(hresp	),
+		     .hrdata		(hrdata	),
+		     .cfg_par0		(cfg_par0	),
+		     .cfg_par1		(cfg_par1	),
+		     .cfg_par2		(cfg_par2	),
+		     .cfg_par3		(cfg_par3	),
+		     .cfg_par4		(cfg_par4	),
+		     .cfg_par5		(cfg_par5	),
+		     .cfg_par6		(cfg_par6	),
+		     .cfg_par7		(cfg_par7	),
+		     .glb_ctrl		(glb_ctrl	),
+		     .sw_rst		(sw_rst	),
 		     // Inputs
-		     .hclk		(hclk),
-		     .hrst_n		(hrst_n),
-		     .hsel		(hsel),
-		     .htrans		(htrans[1:0]),
-		     .hwrite		(hwrite),
-		     .haddr		(haddr[31:0]),
-		     .hwdata		(hwdata[31:0]),
-		     .hsize		(hsize[1:0]),
-		     .hburst		(hburst[2:0]),
-		     .hprot		(hprot[3:0]),
-		     .hready_in		(hready_in));
+		     .hclk		(hclk	),
+		     .hrst_n		(hrst_n	),
+		     .hsel		(hsel	),
+		     .htrans		(htrans	),
+		     .hwrite		(hwrite	),
+		     .haddr		(haddr	),
+		     .hwdata		(hwdata	),
+		     .hsize		(hsize	),
+		     .hburst		(hburst	),
+		     .hprot		(hprot	),
+		     .hready_in		(hready_in	)	
+		     );
 
 
 endmodule // IVS_TOP

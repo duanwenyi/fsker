@@ -90,6 +90,8 @@ module TB_EVA(/*AUTOARG*/
 						   input bit [3:0]  awregion, // [3:0]
 						   input bit [3:0]  awqos, // [3:0]
 						   input bit [7:0]  awuser, // [7:0]
+
+						   input bit 	    bready,
    
 						   input bit 	    wvalid,
 						   input bit 	    wlast,
@@ -101,8 +103,12 @@ module TB_EVA(/*AUTOARG*/
 						   input bit [15:0] wstrb               // [15:0]
 						   );
 
-   import "DPI-C" function void eva_axi_wr_func_o( output bit awready,
-						   output bit wready
+   import "DPI-C" function void eva_axi_wr_func_o( output bit        awready,
+						   output bit 	     wready,
+						   
+						   output bit 	     bvalid,
+						   output bit [ 1:0] bresp,
+						   output bit [ 3:0] bid
 						   );
 
    
@@ -171,9 +177,9 @@ module TB_EVA(/*AUTOARG*/
    input bit [127:0] 	    wdata;            // [31:0]    
    input bit [15:0] 	    wstrb ;   // [15:0] 
 
-   output 		    bvalid;
-   output [ 1:0] 	    bresp;
-   output [ 3:0] 	    bid;
+   output bit		    bvalid;
+   output bit [ 1:0] 	    bresp;
+   output bit [ 3:0] 	    bid;
    input 		    bready;
    
 
@@ -183,10 +189,7 @@ module TB_EVA(/*AUTOARG*/
    assign hburst = 3'b0;
    assign hprot  = 4'b0;
 
-   assign bvalid = 1'b1;
    assign bresp  = 2'b0;
-   assign bid    = 4'b0;
-   
 
    assign hready_out = hready_in;
    
@@ -253,6 +256,8 @@ module TB_EVA(/*AUTOARG*/
 			   awregion, // [3:0]
 			   awqos, // [3:0]
 			   awuser, // [7:0]
+
+			   bready,
 	
 			   wvalid,
 			   wlast,
@@ -266,10 +271,14 @@ module TB_EVA(/*AUTOARG*/
 
 	#EVA_DLY_U 
 	  eva_axi_wr_func_o( awready,
-			     wready
+			     wready,
+
+			     bvalid,
+			     bresp,
+			     bid
 			     );
      end
-
+  
    initial begin
       @(posedge hrest_n);
       eva_hdl_init();

@@ -134,7 +134,12 @@ module TH;
 	      .wlast		(wlast		),
 	      .wid		(wid		),
 	      .wdata		(wdata		),
-	      .wstrb		(wstrb		)
+	      .wstrb		(wstrb		),
+
+	      .bvalid		(bvalid		),
+	      .bresp		(bresp		),
+	      .bid		(bid		),
+	      .bready		(bready		)
 	      );
 
    TB_EVA_INTR U_EVA_INTR(
@@ -154,33 +159,33 @@ module TH;
 			   );
 
    IVS_TOP U_IVS_TOP(// Outputs
-		     .hready_out	(hready_in),
-		     .hresp		(hresp[1:0]),
-		     .hrdata		(hrdata[31:0]),
+		     .hready_out	(hready_in	),
+		     .hresp		(hresp	),
+		     .hrdata		(hrdata	),
 		     // Inputs
-		     .hclk		(hclk),
-		     .hrst_n		(hrest_n),
-		     .hsel		(1'b1),
-		     .htrans		(htrans[1:0]),
-		     .hwrite		(hwrite),
-		     .haddr		(haddr[31:0]),
-		     .hwdata		(hwdata[31:0]),
-		     .hsize		(hsize[1:0]),
-		     .hburst		(hburst[2:0]),
-		     .hprot		(hprot[3:0]),
-		     .hready_in		(hready_out)
-		     );
+		     .hclk		(hclk	),
+		     .hrst_n		(hrest_n	),
+		     .hsel		(1'b1	),
+		     .htrans		(htrans	),
+		     .hwrite		(hwrite	),
+		     .haddr		(haddr	),
+		     .hwdata		(hwdata	),
+		     .hsize		(hsize	),
+		     .hburst		(hburst	),
+		     .hprot		(hprot	),
+		     .hready_in		(hready_out	)
+		     	);
 
    EVA_MEM_WRAP #(32,64,1) U_RAM32x64(// Outputs
-				      .rdata		(rdata),
+				      .rdata		(hrdata	),
 				      // Inputs
-				      .clk		(hclk),
-				      .rst_n		(hrest_n),
-				      .rd		(rd),
-				      .we		(we),
-				      .addr		(addr),
-				      .wdata		(wdata)
-				      );
+				      .clk		(hclk	),
+				      .rst_n		(hrest_n	),
+				      .rd		(rd	),
+				      .we		(we	),
+				      .addr		(addr	),
+				      .wdata		(wdata	)
+				      	);
    
 endmodule // TH
 

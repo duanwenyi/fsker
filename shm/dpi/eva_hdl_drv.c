@@ -298,6 +298,8 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 			const svBitVecVal *awqos,       // [3:0]
 			const svBitVecVal *awuser,      // [7:0]
 		      
+			const svBit        bready,
+
 			const svBit        wvalid,
 			const svBit        wlast,
 			const svBitVecVal *wid,                // [3:0]
@@ -323,6 +325,8 @@ void eva_axi_wr_func_i( const svBit        awvalid,
   eva_bus_t.awqos      = *awqos      & 0xF; 
   eva_bus_t.awuser     = *awuser     & 0xFF; 
 			   
+  eva_bus_t.bready     = bready;
+
   eva_bus_t.wvalid     =  wvalid; 
   eva_bus_t.wlast      =  wlast; 
   eva_bus_t.wid        = *wid        & 0xF; 
@@ -337,7 +341,11 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 }
 
 void eva_axi_wr_func_o( svBit  *awready,
-			svBit  *wready
+			svBit  *wready,
+
+			svBit  *bvalid,
+			svBitVecVal *bresp,
+			svBitVecVal *bid
 			){
   int timeout = 0;
 
@@ -423,6 +431,11 @@ void eva_axi_wr_func_o( svBit  *awready,
   if(eva_bus_t.axi_cur_wlock > 0)
     eva_bus_t.axi_cur_wlock--;
 
+  // brespone part
+  // simple method : using latest WR CMD
+  *bvalid = eva_bus_t.wlast && eva_bus_t.wvalid && *wready;
+  *bid    = eva_bus_t.wid;
+  *bresp  = 0;
 }
 
 void eva_hdl_intr( const svBitVecVal *intr ){

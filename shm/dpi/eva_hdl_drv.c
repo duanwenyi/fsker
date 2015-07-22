@@ -433,9 +433,15 @@ void eva_axi_wr_func_o( svBit  *awready,
 
   // brespone part
   // simple method : using latest WR CMD
-  *bvalid = eva_bus_t.wlast && eva_bus_t.wvalid && *wready;
-  *bid    = eva_bus_t.wid;
-  *bresp  = 0;
+  if(eva_bus_t.wlast && eva_bus_t.wvalid && *wready){
+    *bid    = eva_bus_t.wid;
+    *bvalid = 1;
+  }else if(eva_bus_t.bready && eva_bus_t.bvalid_pre){
+    *bvalid = 0;
+  }
+
+  eva_bus_t.bvalid_pre = *bvalid;  // Backup old value
+  *bresp  = 0;                     // No error inject now
 }
 
 void eva_hdl_intr( const svBitVecVal *intr ){

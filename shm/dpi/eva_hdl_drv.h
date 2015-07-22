@@ -82,6 +82,7 @@ typedef struct EVA_HDL{
   uint32_t awqos;       // [3:0]
   uint32_t awuser;      // [7:0]
   uint32_t bready;
+  uint32_t bvalid_pre;
 
   uint32_t wvalid;
   uint32_t wlast;

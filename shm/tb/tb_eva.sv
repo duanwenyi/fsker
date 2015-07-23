@@ -189,8 +189,6 @@ module TB_EVA(/*AUTOARG*/
    assign hburst = 3'b0;
    assign hprot  = 4'b0;
 
-   assign bresp  = 2'b0;
-
    assign hready_out = hready_in;
    
    always @(posedge hclk)

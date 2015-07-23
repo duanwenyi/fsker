@@ -191,12 +191,12 @@ void eva_axi_rd_func_o( svBit             *arready,
     eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst      = eva_bus_t.arburst;
     eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size       = eva_bus_t.arsize;
 
-    if( (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst != 4) || (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size != 1) ){
+    if( (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst != 1) || (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size != 4) ){
       fprintf(stderr," @EVA HDL not support parameter detected in AXI read command  burst %x , size %x",
 	      eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst, eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size );
-
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst      = 4;
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size       = 1;
+      
+      eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst      = 1;  // INCR
+      eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size       = 4;  // 16bytes
     }
 
     eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].valid      = 1;

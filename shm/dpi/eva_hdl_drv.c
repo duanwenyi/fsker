@@ -200,7 +200,7 @@ void eva_axi_rd_func_o( svBit             *arready,
     }
 
     eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].valid      = 1;
-    eva_bus_t.axi_cur_rlock = rand()%20 + 1;
+    eva_bus_t.axi_cur_rlock = rand()%10;
     
     eva_bus_t.axi_rcmd_nums++;
   }
@@ -368,7 +368,7 @@ void eva_axi_wr_func_o( svBit  *awready,
     }
 
     eva_bus_t.axi_w[eva_bus_t.awid].valid      = 1;
-    eva_bus_t.axi_cur_wlock = rand()%20 + 1;
+    eva_bus_t.axi_cur_wlock = rand()%3;
     
     eva_bus_t.axi_wcmd_nums++;
   }
@@ -385,8 +385,8 @@ void eva_axi_wr_func_o( svBit  *awready,
     eva_bus_t.axi_cur_wactive = 1;
     eva_bus_t.axi_cur_wport   = eva_bus_t.wid;
   }
-  
-  *wready = rand()%2 && (eva_bus_t.axi_cur_wlock == 0);  
+  // not suport AXI write data ahead command now !
+  *wready = rand()%2 && (eva_bus_t.axi_cur_wlock == 0) && eva_bus_t.axi_cur_wactive;  
 
   if(eva_bus_t.axi_cur_wactive && eva_bus_t.wvalid && *wready){
 

@@ -84,6 +84,7 @@ typedef struct EVA_HDL{
   uint32_t bready;
   uint32_t bvalid_pre;
 
+  uint32_t wready_pre;
   uint32_t wvalid;
   uint32_t wlast;
   uint32_t wid;                // [3:0]

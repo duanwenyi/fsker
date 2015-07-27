@@ -433,7 +433,9 @@ void eva_axi_wr_func_o( svBit  *awready,
 
   // brespone part
   // simple method : using latest WR CMD
-  if(eva_bus_t.wlast && eva_bus_t.wvalid && *wready){
+  if((eva_bus_t.wlast && eva_bus_t.wvalid && eva_bus_t.wready_pre) ||
+     (!eva_bus_t.bready && eva_bus_t.bvalid_pre) // for simulator not supprt DPI signal hold ability
+     ){
     *bid    = eva_bus_t.wid;
     *bvalid = 1;
   }else if(eva_bus_t.bready && eva_bus_t.bvalid_pre){
@@ -442,6 +444,8 @@ void eva_axi_wr_func_o( svBit  *awready,
 
   eva_bus_t.bvalid_pre = *bvalid;  // Backup old value
   *bresp  = 0;                     // No error inject now
+
+  eva_bus_t.wready_pre = *wready;
 }
 
 void eva_hdl_intr( const svBitVecVal *intr ){

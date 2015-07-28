@@ -386,9 +386,8 @@ void eva_axi_wr_func_o( svBit  *awready,
     eva_bus_t.axi_cur_wport   = eva_bus_t.wid;
   }
   // not suport AXI write data ahead command now !
-  *wready = rand()%2 && (eva_bus_t.axi_cur_wlock == 0) && eva_bus_t.axi_cur_wactive;  
 
-  if(eva_bus_t.axi_cur_wactive && eva_bus_t.wvalid && *wready){
+  if(eva_bus_t.axi_cur_wactive && eva_bus_t.wvalid && eva_bus_t.wready_pre){
 
       
     eva_bus_t.eva_t->axi_w_addr = eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr;
@@ -427,6 +426,9 @@ void eva_axi_wr_func_o( svBit  *awready,
     }
 
   }
+
+  // *wready should update after eva_bus_t.axi_cur_wactive changed !
+  *wready = (rand()%5 != 0) && eva_bus_t.axi_cur_wactive;  
   
   if(eva_bus_t.axi_cur_wlock > 0)
     eva_bus_t.axi_cur_wlock--;
@@ -442,9 +444,10 @@ void eva_axi_wr_func_o( svBit  *awready,
     *bvalid = 0;
   }
 
-  eva_bus_t.bvalid_pre = *bvalid;  // Backup old value
   *bresp  = 0;                     // No error inject now
 
+  // Backup old value
+  eva_bus_t.bvalid_pre = *bvalid;  
   eva_bus_t.wready_pre = *wready;
 }
 

@@ -12,7 +12,7 @@ EVA_HDL_t eva_bus_t;
 #define EVA_DEBUG
 
 void eva_hdl_init(){
-  memset(&eva_bus_t, sizeof(EVA_HDL_t) , 0);
+  memset(&eva_bus_t, 0, sizeof(EVA_HDL_t));
   
   eva_bus_t.eva_t = eva_map(1);
 
@@ -180,32 +180,42 @@ void eva_axi_rd_func_o( svBit             *arready,
 
   int cc;
   int timeout = 0;
+  int mark_repeat = 0;
 
   // PART I : COMMAND PROCESS
-  if(eva_bus_t.arvalid && (eva_bus_t.axi_rcmd_nums < EVA_AXI_MAX_PORT) && eva_bus_t.axi_pre_arready){
+  if(eva_bus_t.arvalid && (eva_bus_t.axi_rcmd_nums < EVA_AXI_MAX_OUTSTANDING) && eva_bus_t.axi_pre_arready ){
     
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].addr_base  = eva_bus_t.araddr_low;
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].cur_addr   = eva_bus_t.araddr_low;
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].length     = eva_bus_t.arlen + 1;
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].remain_len = eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].length;
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst      = eva_bus_t.arburst;
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size       = eva_bus_t.arsize;
-
-    if( (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst != 1) || (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size != 4) ){
-      fprintf(stderr," @EVA HDL not support parameter detected in AXI read command  burst %x , size %x",
-	      eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst, eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size );
+    if( (eva_bus_t.axi_r[eva_bus_t.arid].burst != 1) //|| (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size != 4) 
+	){
+      fprintf(stderr," @EVA HDL not support parameter detected in AXI read command  burst %x , size %x\n",
+	      eva_bus_t.axi_r[eva_bus_t.arid].burst, eva_bus_t.axi_r[eva_bus_t.arid].size );
       
-      eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].burst      = 1;  // INCR
-      eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size       = 4;  // 16bytes
-    }
+      //eva_bus_t.axi_r[eva_bus_t.arid].burst      = 1;  // INCR
+      //eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size       = 4;  // 16bytes
+      return ;
+    }else if(eva_bus_t.axi_r[eva_bus_t.arid].valid){
+      fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI read command \n", eva_bus_t.arid );
+      mark_repeat = 1;
+    }else{
 
-    eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].valid      = 1;
-    eva_bus_t.axi_cur_rlock = rand()%10;
+      eva_bus_t.axi_r[eva_bus_t.arid].addr_base  = eva_bus_t.araddr_low;
+      eva_bus_t.axi_r[eva_bus_t.arid].cur_addr   = eva_bus_t.araddr_low;
+      eva_bus_t.axi_r[eva_bus_t.arid].length     = eva_bus_t.arlen + 1;
+      eva_bus_t.axi_r[eva_bus_t.arid].remain_len = eva_bus_t.axi_r[eva_bus_t.arid].length;
+      eva_bus_t.axi_r[eva_bus_t.arid].burst      = eva_bus_t.arburst;
+      eva_bus_t.axi_r[eva_bus_t.arid].size       = eva_bus_t.arsize;
+      eva_bus_t.axi_r[eva_bus_t.arid].valid      = 1;
+      eva_bus_t.axi_cur_rlock = rand()%10;
     
-    eva_bus_t.axi_rcmd_nums++;
+      eva_bus_t.axi_rcmd_nums++;
+    }
   }
   
-  if(eva_bus_t.axi_rcmd_nums < EVA_AXI_MAX_PORT)
+  if((eva_bus_t.axi_rcmd_nums < EVA_AXI_MAX_OUTSTANDING) &&
+     (!mark_repeat) && 
+     eva_bus_t.axi_r[eva_bus_t.arid].valid &&
+     (!eva_bus_t.axi_pre_arready)
+     )
     *arready = rand()%2;
   else
     *arready = 0;
@@ -217,7 +227,7 @@ void eva_axi_rd_func_o( svBit             *arready,
     eva_bus_t.axi_cur_ractive = rand()%2  && (eva_bus_t.axi_cur_rlock == 0);
     
     if(eva_bus_t.axi_cur_ractive){
-      for(cc=0; cc< eva_bus_t.axi_rcmd_nums; cc++){
+      for(cc=0; cc< EVA_AXI_MAX_PORT; cc++){
 	if(eva_bus_t.axi_r[cc].valid){
 	  eva_bus_t.axi_cur_rport = cc;
 	  break;
@@ -349,31 +359,41 @@ void eva_axi_wr_func_o( svBit  *awready,
 			){
   int timeout = 0;
 
+  int mark_repeat = 0;
   // PART I : COMMAND PROCESS
-  if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_PORT) && eva_bus_t.axi_pre_awready){
+  if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) && eva_bus_t.axi_pre_awready){
     
-    eva_bus_t.axi_w[eva_bus_t.awid].addr_base  = eva_bus_t.awaddr_low;
-    eva_bus_t.axi_w[eva_bus_t.awid].cur_addr   = eva_bus_t.awaddr_low;
-    eva_bus_t.axi_w[eva_bus_t.awid].length     = eva_bus_t.awlen + 1;
-    eva_bus_t.axi_w[eva_bus_t.awid].remain_len = eva_bus_t.axi_w[eva_bus_t.awid].length;
-    eva_bus_t.axi_w[eva_bus_t.awid].burst      = eva_bus_t.awburst;
-    eva_bus_t.axi_w[eva_bus_t.awid].size       = eva_bus_t.awsize;
-
     if( (eva_bus_t.axi_w[eva_bus_t.awid].burst != 1) || (eva_bus_t.axi_w[eva_bus_t.awid].size != 4) ){
       fprintf(stderr," @EVA HDL not support parameter detected in AXI write command  burst %x , size %x",
 	      eva_bus_t.axi_w[eva_bus_t.awid].burst, eva_bus_t.axi_w[eva_bus_t.awid].size );
 
-      eva_bus_t.axi_w[eva_bus_t.awid].burst      = 1;  // INCR
-      eva_bus_t.axi_w[eva_bus_t.awid].size       = 4;  // 16bytes
-    }
+      //eva_bus_t.axi_w[eva_bus_t.awid].burst      = 1;  // INCR
+      //eva_bus_t.axi_w[eva_bus_t.awid].size       = 4;  // 16bytes
+      return ;
+    }else if(eva_bus_t.axi_r[eva_bus_t.arid].valid){
+      fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI read command \n", eva_bus_t.arid );
+      mark_repeat = 1;
+    }else{
 
-    eva_bus_t.axi_w[eva_bus_t.awid].valid      = 1;
-    eva_bus_t.axi_cur_wlock = rand()%3;
+      eva_bus_t.axi_w[eva_bus_t.awid].addr_base  = eva_bus_t.awaddr_low;
+      eva_bus_t.axi_w[eva_bus_t.awid].cur_addr   = eva_bus_t.awaddr_low;
+      eva_bus_t.axi_w[eva_bus_t.awid].length     = eva_bus_t.awlen + 1;
+      eva_bus_t.axi_w[eva_bus_t.awid].remain_len = eva_bus_t.axi_w[eva_bus_t.awid].length;
+      eva_bus_t.axi_w[eva_bus_t.awid].burst      = eva_bus_t.awburst;
+      eva_bus_t.axi_w[eva_bus_t.awid].size       = eva_bus_t.awsize;
+
+      eva_bus_t.axi_w[eva_bus_t.awid].valid      = 1;
+      eva_bus_t.axi_cur_wlock = rand()%3;
     
-    eva_bus_t.axi_wcmd_nums++;
+      eva_bus_t.axi_wcmd_nums++;
+    }
   }
   
-  if(eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_PORT)
+  if((eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) &&
+     (!mark_repeat) && 
+     eva_bus_t.axi_r[eva_bus_t.arid].valid &&
+     (!eva_bus_t.axi_pre_awready)
+     )
     *awready = rand()%2;
   else
     *awready = 0;
@@ -381,7 +401,11 @@ void eva_axi_wr_func_o( svBit  *awready,
   eva_bus_t.axi_pre_awready = *awready;
 
   // PART II : DATA PROCESS
-  if( (eva_bus_t.axi_wcmd_nums > 0 ) && (!eva_bus_t.axi_cur_wactive) && eva_bus_t.wvalid ){
+  if( (eva_bus_t.axi_wcmd_nums > 0 ) && 
+      eva_bus_t.axi_w[eva_bus_t.wid].valid &&
+      (!eva_bus_t.axi_cur_wactive) && 
+      eva_bus_t.wvalid 
+      ){
     eva_bus_t.axi_cur_wactive = 1;
     eva_bus_t.axi_cur_wport   = eva_bus_t.wid;
   }

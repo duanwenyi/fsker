@@ -8,7 +8,8 @@
 #define EVA_AHB_NONSEQ  2
 #define EVA_AHB_SEQ     3
 
-#define EVA_AXI_MAX_PORT 4
+#define EVA_AXI_MAX_OUTSTANDING 4
+#define EVA_AXI_MAX_PORT 16
 #define EVA_SCOPE_CMP_MODE_EQUAL 1
 
 // AXI Port Cell

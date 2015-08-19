@@ -184,7 +184,7 @@ void *eva_interrupt_handler(void *){
 #else
 void eva_interrupt_handler(void){
 #endif
-  memset(&intr_reg, sizeof(EVA_INTR_REG_t) , 0);
+  memset(&intr_reg, 0, sizeof(EVA_INTR_REG_t));
   
   int  cc = 0;
   while(1){

@@ -115,7 +115,7 @@ void eva_axi_wr_handler(void){
 	uint8_t * ptr = (uint8_t *)eva_t->axi_w_addr;
 	// DW0
 	if( eva_t->axi_w_strb & 0x1 )
-	  *ptr = eva_t->axi_w_data0;
+	  *ptr = eva_t->axi_w_data0 & 0xFF;
 	ptr++;
 	if( eva_t->axi_w_strb & 0x2 )
 	  *ptr = (eva_t->axi_w_data0 >> 8 ) & 0xFF;
@@ -168,7 +168,7 @@ void eva_axi_wr_handler(void){
       }
 
       barrier();
-      eva_t->axi_r_sync = EVA_SYNC_ACK;
+      eva_t->axi_w_sync = EVA_SYNC_ACK;
     }else{
       usleep(1);
     }
@@ -293,7 +293,7 @@ void eva_drv_init(){
   }
 #endif
 
-  fprintf(stderr, " @EVA SW initial OVER @0x%8x\n",(uint32_t)eva_t);  
+  fprintf(stderr, " @EVA SW initial OVER @0x%8x\n",eva_t);  
 }
 
 void eva_drv_stop(){

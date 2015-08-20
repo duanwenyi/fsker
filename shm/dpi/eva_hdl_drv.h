@@ -101,6 +101,7 @@ typedef struct EVA_HDL{
   uint32_t scopeMode;  // 1: be equal to handshake  0: be not equal to over
   FILE    *fp;
 
+  uint32_t sys_sigint;
 }EVA_HDL_t, *EVA_HDL_p;
 
 void eva_hdl_init();

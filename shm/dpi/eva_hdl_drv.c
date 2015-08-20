@@ -1,3 +1,5 @@
+
+#include <signal.h> 
 #include "eva_hdl_drv.h"
 #include "vpi_user.h"
 
@@ -9,17 +11,36 @@
 
 EVA_HDL_t eva_bus_t;
 
-#define EVA_DEBUG
+//#define EVA_DEBUG
+
+void eva_handler(int s){
+  fprintf(stderr, " @EVA catch a SYSTEM interrupt .\n");  
+  eva_bus_t.sys_sigint = 1;
+
+}  
+
 
 void eva_hdl_init(){
   memset(&eva_bus_t, 0, sizeof(EVA_HDL_t));
+  struct sigaction sigIntHandler;
+
+  sigIntHandler.sa_handler = eva_handler;
+  sigemptyset(&sigIntHandler.sa_mask);
+  sigIntHandler.sa_flags = 0;
   
+  sigaction(SIGINT, &sigIntHandler, NULL); 
+
   eva_bus_t.eva_t = eva_map(1);
 
   eva_bus_t.eva_t->control = EVA_BUS_INIT;
 
   while(eva_bus_t.eva_t->control == EVA_BUS_INIT ){
     usleep(1);
+    if(eva_bus_t.sys_sigint == 1){
+      eva_bus_t.sys_sigint = 0;
+      //pause();
+      break;
+    }
   }
   
   if( eva_bus_t.eva_t->control != EVA_BUS_ACK){
@@ -180,7 +201,7 @@ void eva_axi_rd_func_o( svBit             *arready,
 
   int cc;
   int timeout = 0;
-  int mark_repeat = 0;
+  int mark_active = 0;
 
   // PART I : COMMAND PROCESS
   if(eva_bus_t.arvalid && (eva_bus_t.axi_rcmd_nums < EVA_AXI_MAX_OUTSTANDING) && eva_bus_t.axi_pre_arready ){
@@ -194,9 +215,8 @@ void eva_axi_rd_func_o( svBit             *arready,
       //eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size       = 4;  // 16bytes
       return ;
     }else if(eva_bus_t.axi_r[eva_bus_t.arid].valid){
-      fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI read command \n", eva_bus_t.arid );
-      mark_repeat = 1;
-    }else{
+      //fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI read command \n", eva_bus_t.awid );
+    }else if(!eva_bus_t.axi_r[eva_bus_t.arid].valid){
 
       eva_bus_t.axi_r[eva_bus_t.arid].addr_base  = eva_bus_t.araddr_low;
       eva_bus_t.axi_r[eva_bus_t.arid].cur_addr   = eva_bus_t.araddr_low;
@@ -208,15 +228,16 @@ void eva_axi_rd_func_o( svBit             *arready,
       eva_bus_t.axi_cur_rlock = rand()%10;
     
       eva_bus_t.axi_rcmd_nums++;
+      mark_active = 1;
     }
   }
   
-  if((eva_bus_t.axi_rcmd_nums < EVA_AXI_MAX_OUTSTANDING) &&
-     (!mark_repeat) && 
+  if((eva_bus_t.axi_rcmd_nums <= EVA_AXI_MAX_OUTSTANDING) &&
+     mark_active && 
      eva_bus_t.axi_r[eva_bus_t.arid].valid &&
      (!eva_bus_t.axi_pre_arready)
      )
-    *arready = rand()%2;
+    *arready = 1;
   else
     *arready = 0;
 
@@ -253,12 +274,13 @@ void eva_axi_rd_func_o( svBit             *arready,
 
 	barrier();
 	eva_bus_t.eva_t->axi_r_sync = EVA_SYNC;
+	barrier();
 	
 	timeout = 0;
 	while(eva_bus_t.eva_t->axi_r_sync == EVA_SYNC){
 	  timeout++;
 	  if(timeout > 100000000){ // 1 million
-	    fprintf(stderr," @EVA HDL axi_r_sync timeout , check SYSTEM !");
+	    fprintf(stderr," @EVA HDL axi_r_sync timeout , check SYSTEM !\n");
 	    return ;
 	  }
 	}
@@ -282,8 +304,12 @@ void eva_axi_rd_func_o( svBit             *arready,
 	*rvalid = 0;
 	*rlast  = 0;
 	eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].valid = 0;
+	
+	if(eva_bus_t.axi_rcmd_nums > 0)
+	  eva_bus_t.axi_rcmd_nums--;
+	else
+	  fprintf(stderr," ERROR @EVA HDL rlast when no read command detected! @%x\n", eva_bus_t.dbg_id);
 
-	eva_bus_t.axi_rcmd_nums--;
       }
     }
   }
@@ -359,21 +385,20 @@ void eva_axi_wr_func_o( svBit  *awready,
 			){
   int timeout = 0;
 
-  int mark_repeat = 0;
+  int mark_active = 0;
   // PART I : COMMAND PROCESS
-  if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) && eva_bus_t.axi_pre_awready){
+  if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) ){
     
     if( (eva_bus_t.axi_w[eva_bus_t.awid].burst != 1) || (eva_bus_t.axi_w[eva_bus_t.awid].size != 4) ){
-      fprintf(stderr," @EVA HDL not support parameter detected in AXI write command  burst %x , size %x",
+      fprintf(stderr," @EVA HDL not support parameter detected in AXI write command  burst %x , size %x\n",
 	      eva_bus_t.axi_w[eva_bus_t.awid].burst, eva_bus_t.axi_w[eva_bus_t.awid].size );
 
       //eva_bus_t.axi_w[eva_bus_t.awid].burst      = 1;  // INCR
       //eva_bus_t.axi_w[eva_bus_t.awid].size       = 4;  // 16bytes
       return ;
-    }else if(eva_bus_t.axi_r[eva_bus_t.arid].valid){
-      fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI read command \n", eva_bus_t.arid );
-      mark_repeat = 1;
-    }else{
+    }else if(eva_bus_t.axi_w[eva_bus_t.awid].valid){
+      //fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI write command \n", eva_bus_t.arid );
+    }else if(!eva_bus_t.axi_w[eva_bus_t.awid].valid){
 
       eva_bus_t.axi_w[eva_bus_t.awid].addr_base  = eva_bus_t.awaddr_low;
       eva_bus_t.axi_w[eva_bus_t.awid].cur_addr   = eva_bus_t.awaddr_low;
@@ -386,15 +411,16 @@ void eva_axi_wr_func_o( svBit  *awready,
       eva_bus_t.axi_cur_wlock = rand()%3;
     
       eva_bus_t.axi_wcmd_nums++;
+      mark_active = 1;
     }
   }
   
-  if((eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) &&
-     (!mark_repeat) && 
+  if((eva_bus_t.axi_wcmd_nums <= EVA_AXI_MAX_OUTSTANDING) &&
+     mark_active && 
      eva_bus_t.axi_r[eva_bus_t.arid].valid &&
      (!eva_bus_t.axi_pre_awready)
      )
-    *awready = rand()%2;
+    *awready = 1;
   else
     *awready = 0;
 
@@ -402,6 +428,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 
   // PART II : DATA PROCESS
   if( (eva_bus_t.axi_wcmd_nums > 0 ) && 
+      (!((eva_bus_t.wid == eva_bus_t.awid) && eva_bus_t.awvalid)) &&
       eva_bus_t.axi_w[eva_bus_t.wid].valid &&
       (!eva_bus_t.axi_cur_wactive) && 
       eva_bus_t.wvalid 
@@ -425,12 +452,13 @@ void eva_axi_wr_func_o( svBit  *awready,
 
     barrier();
     eva_bus_t.eva_t->axi_w_sync = EVA_SYNC;
+    barrier();
 
     timeout = 0;
     while(eva_bus_t.eva_t->axi_w_sync == EVA_SYNC){
       timeout++;
       if(timeout > 100000000){ // 1 million
-	fprintf(stderr," @EVA HDL axi_w_sync timeout , check SYSTEM !");
+	fprintf(stderr," @EVA HDL axi_w_sync timeout , check SYSTEM !\n");
 	return ;
       }
     }
@@ -441,12 +469,15 @@ void eva_axi_wr_func_o( svBit  *awready,
 
     if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].remain_len == 0){
       if( !eva_bus_t.wlast )
-	fprintf(stderr," ERROR @EVA HDL rlast not detected in a write burst last! @%x", eva_bus_t.dbg_id);
+	fprintf(stderr," ERROR @EVA HDL wlast not detected in a write burst last! @%x\n", eva_bus_t.dbg_id);
 
       eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].valid = 0;
       eva_bus_t.axi_cur_wactive = 0;
-
-      eva_bus_t.axi_wcmd_nums--;
+      
+      if(eva_bus_t.axi_wcmd_nums > 0)
+	eva_bus_t.axi_wcmd_nums--;
+      else
+	fprintf(stderr," ERROR @EVA HDL wlast when no write command detected! @%x\n", eva_bus_t.dbg_id);
     }
 
   }
@@ -477,7 +508,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 
 void eva_hdl_intr( const svBitVecVal *intr ){
   uint8_t intr_s = *intr & 0xFF;
-  if(intr_s)
+  if( (intr_s & eva_bus_t.eva_t->intr) == 0 )
     eva_bus_t.eva_t->intr = intr_s;
 }
 

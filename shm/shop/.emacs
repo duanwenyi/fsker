@@ -6,7 +6,7 @@
 ;(require 'auto-complete-config)
 ;(ac-config-default)
 ;(require 'auto-complete-clang)
-
+;(require 'sr-speedbar)
 (ffap-bindings)
 
 ;(load "desktop")

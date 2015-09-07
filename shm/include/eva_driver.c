@@ -93,7 +93,6 @@ void *eva_axi_wr_handler(void *){
 #else
 void eva_axi_wr_handler(void){
 #endif  
-  uint32_t *ptr;
   while(1){
     if(eva_t->axi_w_sync == EVA_SYNC){
       if(eva_t->axi_w_strb == 0xFFFF){
@@ -189,12 +188,8 @@ void eva_interrupt_handler(void){
   int  cc = 0;
   while(1){
     if(eva_t->intr != 0){
-      fprintf(stderr, " @EVA recieved interrupt : %x  INT MASK[%d %d %d %d - %d %d %d %d]\n", 
-	      eva_t->intr, 
-	      intr_reg.valid[7],intr_reg.valid[6],intr_reg.valid[5],intr_reg.valid[4],
-	      intr_reg.valid[3],intr_reg.valid[2],intr_reg.valid[1],intr_reg.valid[0]
-	      ); 
-      for( cc=0; cc<8; cc++){
+      fprintf(stderr, " @EVA recieved interrupt : %x \n", eva_t->intr ); 
+      for( cc=0; cc<EVA_MAX_INT_NUM; cc++){
 	if( intr_reg.valid[cc] == 1){
 	  if( (eva_t->intr & (1<<cc)) != 0 ){
 	    // excute registered interrupt function
@@ -214,22 +209,28 @@ void eva_interrupt_handler(void){
 #endif
 }
 
-int eva_intr_register(void (*user_func)(), int intr_id){
-  if(intr_reg.valid[intr_id] == 0){
-    intr_reg.func[intr_id]  = user_func;
-    intr_reg.valid[intr_id] = 1;
-    fprintf(stderr, " @EVA intr_register [ID:%d] [BASE:0x%x] is register OK.\n", intr_id, user_func); 
-    return 0;
+void eva_intr_register(void (*user_func)(), int intr_id){
+  if(intr_id < EVA_MAX_INT_NUM){
+    if(intr_reg.valid[intr_id] == 0){
+      intr_reg.func[intr_id]  = user_func;
+      intr_reg.valid[intr_id] = 1;
+      fprintf(stderr, " @EVA intrrupt register [ID:%d] [BASE:0x%x] is register OK.\n", intr_id, (size_t)user_func); 
+    }else{
+      fprintf(stderr, " @EVA intrrupt register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
+    }
   }else{
-    fprintf(stderr, " @EVA intr_register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
-    return 1;
+    fprintf(stderr, " @EVA intrrupt register : [ID]:%d exceed MAX support numbers [%d].\n", intr_id, EVA_MAX_INT_NUM); 
   }
-
 }
 
+
 void eva_intr_unregister(int intr_id){
+  if(intr_id < EVA_MAX_INT_NUM){
     intr_reg.func[intr_id]  = NULL;
     intr_reg.valid[intr_id] = 0;
+  }else{
+    fprintf(stderr, " @EVA intrrupt unregister : [ID]:%d exceed MAX support numbers [%d].\n", intr_id, EVA_MAX_INT_NUM); 
+  }
 }
 
 void eva_drv_init(){
@@ -293,7 +294,7 @@ void eva_drv_init(){
   }
 #endif
 
-  fprintf(stderr, " @EVA SW initial OVER @0x%8x\n",eva_t);  
+  fprintf(stderr, " @EVA SW initial OVER @0x%8x\n",(size_t)eva_t);  
 }
 
 void eva_drv_stop(){
@@ -356,4 +357,20 @@ void evaScopeWait(char *path, uint32_t value, uint32_t mode ){
   }else{
     fprintf(stderr,"OK @wait %s != 0x%x : after %dus\n", path, value, tim);
   }
+}
+
+void eva_delay(int cycle){
+  uint32_t mark = eva_t->tick;
+  uint32_t mark2;
+  int grap;
+  do{
+    mark2 = eva_t->tick;
+    if( mark2 > mark)
+      grap = mark2 - mark;
+    else
+      grap = 0xFFFFFFFF - mark2 + mark;
+    usleep(1);
+  }while( grap < cycle);
+  
+  fprintf(stderr," @EVA delay (%d) [%d-%d]\n", cycle, mark2, mark);
 }

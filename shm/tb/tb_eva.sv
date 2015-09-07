@@ -306,23 +306,23 @@ module TB_EVA_INTR(
    // Inputs
    clk, rst_n, interrupt
    );
-   import "DPI-C" function void eva_hdl_intr( input bit [7:0]   intr);
+   import "DPI-C" function void eva_hdl_intr( input bit [31:0]   intr);
 
    input          clk;
    input 	  rst_n;
    
-   input [7:0] 	  interrupt;
+   input [31:0]   interrupt;
 
-   reg [7:0] 	  intr_ff;
+   reg [31:0] 	  intr_ff;
 
    always @(posedge clk)
      if(~rst_n)
-       intr_ff   <= 8'b0;
+       intr_ff   <= 32'b0;
      else
        intr_ff   <= interrupt;
 
    // calculate the rose trigger
-   wire [7:0] 	  intr_msi = interrupt & ~intr_ff;
+   wire [31:0] 	  intr_msi = interrupt & ~intr_ff;
 
    always @(posedge clk)
      if(rst_n)

@@ -20,6 +20,8 @@
 #define EVA_SYNC       0x5c5c5c5c
 #define EVA_SYNC_ACK   0xc5c5c5c5
 
+#define EVA_MAX_INT_NUM 32
+
 /*
   EVA BUS initial process :
 HDL:  EVA_BUS_INIT |             | EVA_BUS_ALVIE |              | EVA_BUS_INIT --> end simulation
@@ -33,9 +35,9 @@ C  :               | EVA_BUS_ACK |               | EVA_BUS_PAUSE |
 #define EVA_WAIT_SYNC_MSK 0x1
 
 typedef struct EVA_BUS_ST {
-  uint16_t control;  // 
-  uint8_t  resv;     // reserved  [0]: 1:wait sync
-  uint8_t  intr;     // Interrupt , every bit for one register interrupt .
+  uint32_t control;  // 
+  uint32_t resv;     // reserved  [0]: 1:wait sync
+  uint32_t intr;     // Interrupt , every bit for one register interrupt .
 
   uint32_t ahb_sync;
   uint32_t ahb_write;
@@ -56,7 +58,8 @@ typedef struct EVA_BUS_ST {
   uint32_t axi_r_data1;
   uint32_t axi_r_data2;
   uint32_t axi_r_data3;
-
+  
+  uint32_t tick;
   //void *shm;
 }EVA_BUS_ST_t, *EVA_BUS_ST_p;
 

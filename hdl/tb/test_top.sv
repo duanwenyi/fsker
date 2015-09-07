@@ -146,7 +146,7 @@ module TH;
 			  // Inputs
 			  .clk			(hclk),
 			  .rst_n		(hrest_n),
-			  .interrupt		({7'b0, U_IVS_TOP.U_IVS_SLV.sw_rst})
+			  .interrupt		({31'b0, U_IVS_TOP.U_IVS_SLV.sw_rst})
 			  );
    
    

@@ -10,7 +10,7 @@ int main(int argc, char **argv){
 
   eva_drv_init();
   
-  int ret = eva_intr_register(intr_sample, 0);
+  eva_intr_register(intr_sample, 0);
 
   eva_cpu_wr(0x4,1);
 
@@ -28,6 +28,8 @@ int main(int argc, char **argv){
   fprintf(stderr," read addr 0x108:  0x%x\n", rd_val);
 
   evaScopeWait( "TH.U_IVS_TOP.U_IVS_SLV.cfg_par2", 0xFFFF0000, 1 );
+
+  eva_delay(100);
 
   eva_drv_stop();
 

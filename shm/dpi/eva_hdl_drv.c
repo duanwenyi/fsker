@@ -90,6 +90,7 @@ void eva_ahb_bus_func_i( const svBit        hready,
   eva_bus_t.hresp  = *hresp & 0x3;
   eva_bus_t.hrdata = *hrdata;
   
+  eva_bus_t.eva_t->tick++;
 }
 
 void eva_ahb_bus_func_o( svBitVecVal *htrans,
@@ -123,6 +124,7 @@ void eva_ahb_bus_func_o( svBitVecVal *htrans,
       *hwdata = eva_bus_t.eva_t->ahb_data;
     if(eva_bus_t.hready){
       *htrans = 0;
+      *hwrite = 0;
       eva_bus_t.ahb_fsm = EVA_AHB_SEQ;
     }
 #ifdef EVA_DEBUG
@@ -507,7 +509,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 }
 
 void eva_hdl_intr( const svBitVecVal *intr ){
-  uint8_t intr_s = *intr & 0xFF;
+  uint32_t intr_s = *intr & 0xFFFFFFFF;
   if( (intr_s & eva_bus_t.eva_t->intr) == 0 )
     eva_bus_t.eva_t->intr = intr_s;
 }

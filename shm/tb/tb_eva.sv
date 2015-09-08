@@ -325,7 +325,7 @@ module TB_EVA_INTR(
    wire [31:0] 	  intr_msi = interrupt & ~intr_ff;
 
    always @(posedge clk)
-     if(rst_n)
+     if(rst_n & (|intr_msi))
        eva_hdl_intr( intr_msi );
    
 endmodule // TB_EVA_INTR

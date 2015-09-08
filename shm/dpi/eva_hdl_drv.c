@@ -206,9 +206,9 @@ void eva_axi_rd_func_o( svBit             *arready,
   int mark_active = 0;
 
   // PART I : COMMAND PROCESS
-  if(eva_bus_t.arvalid && (eva_bus_t.axi_rcmd_nums < EVA_AXI_MAX_OUTSTANDING) && eva_bus_t.axi_pre_arready ){
+  if(eva_bus_t.arvalid && (eva_bus_t.axi_rcmd_nums < EVA_AXI_MAX_OUTSTANDING) ){
     
-    if( (eva_bus_t.axi_r[eva_bus_t.arid].burst != 1) //|| (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size != 4) 
+    if( (eva_bus_t.arburst != 1) //|| (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size != 4) 
 	){
       fprintf(stderr," @EVA HDL not support parameter detected in AXI read command  burst %x , size %x\n",
 	      eva_bus_t.axi_r[eva_bus_t.arid].burst, eva_bus_t.axi_r[eva_bus_t.arid].size );
@@ -419,7 +419,7 @@ void eva_axi_wr_func_o( svBit  *awready,
   
   if((eva_bus_t.axi_wcmd_nums <= EVA_AXI_MAX_OUTSTANDING) &&
      mark_active && 
-     eva_bus_t.axi_r[eva_bus_t.arid].valid &&
+     eva_bus_t.axi_r[eva_bus_t.awid].valid &&
      (!eva_bus_t.axi_pre_awready)
      )
     *awready = 1;

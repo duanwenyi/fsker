@@ -59,7 +59,9 @@ typedef struct EVA_BUS_ST {
   uint32_t axi_r_data2;
   uint32_t axi_r_data3;
   
-  uint32_t tick;
+  // One 32 bits counter be full to 0xFFFF_FFFF only need about ~ 3 hour
+  // So 64 bits is better
+  uint64_t tick;
   //void *shm;
 }EVA_BUS_ST_t, *EVA_BUS_ST_p;
 

@@ -12,6 +12,7 @@
 EVA_HDL_t eva_bus_t;
 
 //#define EVA_DEBUG
+#define EVA_CONTROL_C_OUT
 
 void eva_handler(int s){
   fprintf(stderr, " @EVA catch a SYSTEM interrupt .\n");  
@@ -22,13 +23,15 @@ void eva_handler(int s){
 
 void eva_hdl_init(){
   memset(&eva_bus_t, 0, sizeof(EVA_HDL_t));
-  struct sigaction sigIntHandler;
 
+#ifdef EVA_CONTROL_C_OUT
+  struct sigaction sigIntHandler;
   sigIntHandler.sa_handler = eva_handler;
   sigemptyset(&sigIntHandler.sa_mask);
   sigIntHandler.sa_flags = 0;
   
   sigaction(SIGINT, &sigIntHandler, NULL); 
+#endif
 
   eva_bus_t.eva_t = eva_map(1);
 

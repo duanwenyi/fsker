@@ -5,6 +5,7 @@
 static EVA_BUS_ST_p eva_t = NULL;
 pthread_t eva_axi_wr,eva_axi_rd;
 pthread_t eva_intr;
+pthread_t eva_monitor;
 
 #define EVA_SAFE_MODE
 //#define EVA_DEBUG
@@ -33,6 +34,7 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
 #endif
 }
 
+
 uint32_t eva_cpu_rd(uint32_t addr){
 #ifdef EVA_SAFE_MODE
   while(eva_t->ahb_sync != EVA_SYNC_ACK){
@@ -57,6 +59,23 @@ uint32_t eva_cpu_rd(uint32_t addr){
   
   return eva_t->ahb_data;
 }
+
+#ifdef __cplusplus
+void *eva_monitor_handler(void *){
+#else
+void eva_monitor_handler(void){
+#endif
+  uint64_t local_time = 0;
+  
+  while(1){
+    
+    sleep(1);
+    local_time++;
+    fprintf(stderr," @EVA local time: %lld S - HDL time: %lld CYCLE ::-> %lld (CYCLE/S)\r",
+	    local_time, eva_t->tick , (eva_t->tick/local_time));
+  }
+}
+
 
 #ifdef __cplusplus
 void *eva_axi_rd_handler(void *){
@@ -187,8 +206,8 @@ void eva_interrupt_handler(void){
   
   int  cc = 0;
   while(1){
-    if(eva_t->intr != 0){
-      fprintf(stderr, " @EVA recieved interrupt : %x \n", eva_t->intr ); 
+    if( (intr_reg.valid_bits != 0) && (eva_t->intr != 0)){
+      fprintf(stderr, " @EVA recieved interrupt : 0x%8x    [Local Mask: 0x%8x]\n", eva_t->intr, intr_reg.valid_bits ); 
       for( cc=0; cc<EVA_MAX_INT_NUM; cc++){
 	if( intr_reg.valid[cc] == 1){
 	  if( (eva_t->intr & (1<<cc)) != 0 ){
@@ -214,7 +233,8 @@ void eva_intr_register(void (*user_func)(), int intr_id){
     if(intr_reg.valid[intr_id] == 0){
       intr_reg.func[intr_id]  = user_func;
       intr_reg.valid[intr_id] = 1;
-      fprintf(stderr, " @EVA intrrupt register [ID:%d] [BASE:0x%x] is register OK.\n", intr_id, (size_t)user_func); 
+      intr_reg.valid_bits |= (1<< intr_id);
+      fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%x] is register OK.\n", intr_id, (size_t)user_func); 
     }else{
       fprintf(stderr, " @EVA intrrupt register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
     }
@@ -228,6 +248,7 @@ void eva_intr_unregister(int intr_id){
   if(intr_id < EVA_MAX_INT_NUM){
     intr_reg.func[intr_id]  = NULL;
     intr_reg.valid[intr_id] = 0;
+    intr_reg.valid_bits &= ~(1<< intr_id);
   }else{
     fprintf(stderr, " @EVA intrrupt unregister : [ID]:%d exceed MAX support numbers [%d].\n", intr_id, EVA_MAX_INT_NUM); 
   }
@@ -273,6 +294,12 @@ void eva_drv_init(){
     fprintf(stderr, " @EVA SW Interrupt Handle  thread created failed , exit .\n");  
     exit(EXIT_FAILURE);  
   }
+
+  ret = pthread_create(&eva_monitor, NULL, eva_monitor_handler, NULL);
+  if(ret != 0){
+    fprintf(stderr, " @EVA SW Monitor Handle  thread created failed , exit .\n");  
+    exit(EXIT_FAILURE);  
+  }
 #else
 
   ret = pthread_create(&eva_axi_wr, NULL, (void *)eva_axi_wr_handler, NULL);
@@ -290,6 +317,12 @@ void eva_drv_init(){
   ret = pthread_create(&eva_intr, NULL, (void *)eva_interrupt_handler, NULL);
   if(ret != 0){
     fprintf(stderr, " @EVA SW Interrupt Handle  thread created failed , exit .\n");  
+    exit(EXIT_FAILURE);  
+  }
+
+  ret = pthread_create(&eva_monitor, NULL, (void *)eva_monitor_handler, NULL);
+  if(ret != 0){
+    fprintf(stderr, " @EVA SW Monitor Handle  thread created failed , exit .\n");  
     exit(EXIT_FAILURE);  
   }
 #endif
@@ -353,24 +386,21 @@ void evaScopeWait(char *path, uint32_t value, uint32_t mode ){
   }
 
   if(mode == 1){
-    fprintf(stderr,"OK @wait %s == 0x%x : after %dus\n", path, value, tim);
+    fprintf(stderr,"OK @wait %s == 0x%x : after %dus @HDL : %lld CYCLE\n", path, value, tim, eva_t->tick);
   }else{
-    fprintf(stderr,"OK @wait %s != 0x%x : after %dus\n", path, value, tim);
+    fprintf(stderr,"OK @wait %s != 0x%x : after %dus @HDL : %lld CYCLE\n", path, value, tim, eva_t->tick);
   }
 }
 
 void eva_delay(int cycle){
-  uint32_t mark = eva_t->tick;
-  uint32_t mark2;
+  uint64_t mark = eva_t->tick;
+  uint64_t mark2;
   int grap;
   do{
     mark2 = eva_t->tick;
-    if( mark2 > mark)
-      grap = mark2 - mark;
-    else
-      grap = 0xFFFFFFFF - mark2 + mark;
+    grap = mark2 - mark;
     usleep(1);
   }while( grap < cycle);
   
-  fprintf(stderr," @EVA delay (%d) [%d-%d]\n", cycle, mark2, mark);
+  fprintf(stderr," @EVA delayed  %d HDL CYCLE [%lld-%lld]\n", cycle, mark2, mark);
 }

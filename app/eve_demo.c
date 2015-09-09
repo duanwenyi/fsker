@@ -31,6 +31,8 @@ int main(int argc, char **argv){
 
   eva_delay(100);
 
+  sleep(60);
+
   eva_drv_stop();
 
   return 0;

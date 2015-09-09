@@ -20,6 +20,7 @@ void eva_delay(int cycle);
 typedef struct EVA_INTR_REG {
   uint32_t valid[EVA_MAX_INT_NUM];
   void (*func[EVA_MAX_INT_NUM])(void);
+  uint32_t valid_bits;
 }EVA_INTR_REG_t;
 
 

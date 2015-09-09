@@ -399,8 +399,9 @@ void eva_delay(int cycle){
   do{
     mark2 = eva_t->tick;
     grap = mark2 - mark;
-    usleep(1);
+    if(cycle > 20)
+      usleep(1);
   }while( grap < cycle);
   
-  fprintf(stderr," @EVA delayed  %d HDL CYCLE [%lld-%lld]\n", cycle, mark2, mark);
+  fprintf(stderr," @EVA delayed  %d HDL CYCLE [%lld -> %lld]\n", cycle, mark, mark2 );
 }

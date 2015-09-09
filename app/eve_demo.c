@@ -6,7 +6,8 @@ void intr_sample(){
 
 int main(int argc, char **argv){
   int rd_val;
-
+  int cc;
+  int ahb_rw_test = 100000;
 
   eva_drv_init();
   
@@ -29,9 +30,15 @@ int main(int argc, char **argv){
 
   evaScopeWait( "TH.U_IVS_TOP.U_IVS_SLV.cfg_par2", 0xFFFF0000, 1 );
 
-  eva_delay(100);
+  fprintf(stderr," Begin %d times AHB write + read : \n", ahb_rw_test);
+  eva_delay(1);
+  for(cc=0; cc< ahb_rw_test; cc++){
+    eva_cpu_wr(0x108, 0xFFFF0000);
+    rd_val = eva_cpu_rd(0x100);
+  }
+  eva_delay(1);
 
-  sleep(60);
+  sleep(10);
 
   eva_drv_stop();
 

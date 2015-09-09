@@ -92,8 +92,7 @@ void eva_ahb_bus_func_i( const svBit        hready,
   eva_bus_t.hready = hready;
   eva_bus_t.hresp  = *hresp & 0x3;
   eva_bus_t.hrdata = *hrdata;
-  
-  eva_bus_t.eva_t->tick++;
+
 }
 
 void eva_ahb_bus_func_o( svBitVecVal *htrans,
@@ -191,6 +190,7 @@ void eva_axi_rd_func_i( const svBit        arvalid,
 				              
   eva_bus_t.rready		=  rready;
 
+  eva_bus_t.eva_t->tick++;
 }
 
 void eva_axi_rd_func_o( svBit             *arready,

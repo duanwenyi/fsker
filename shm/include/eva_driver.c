@@ -71,7 +71,7 @@ void eva_monitor_handler(void){
     
     sleep(1);
     local_time++;
-    fprintf(stderr," @EVA local time: %lld S - HDL time: %lld CYCLE ::-> %lld (CYCLE/S)\r",
+    fprintf(stderr," @EVA local time: %lld S - HDL time: 0x%llx CYCLE ::-> %lld (CYCLE/S)\r",
 	    local_time, eva_t->tick , (eva_t->tick/local_time));
   }
 }

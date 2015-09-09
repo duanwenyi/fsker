@@ -184,6 +184,7 @@ module TB_EVA(/*AUTOARG*/
    
 
    bit 			    stop;
+   reg [63:0] 		    tick;    // Using for debug
 
    assign hsize  = 3'b10;
    assign hburst = 3'b0;
@@ -278,10 +279,15 @@ module TB_EVA(/*AUTOARG*/
      end
   
    initial begin
-      @(posedge hrest_n);
+      @(posedge hrest_n );
       eva_hdl_init();
    end
    
+   always @(posedge aclk or negedge arest_n)
+     if(~arest_n)
+       tick  <= 64'b0;
+     else
+       tick  <= tick + 1;
    
    always @(posedge aclk)
      if(arest_n) begin

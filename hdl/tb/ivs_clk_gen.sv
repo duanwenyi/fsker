@@ -14,9 +14,9 @@ module IVS_CLK_GEN(/*AUTOARG*/
    initial begin
       aclk = 1'b0;
       #3.3ns;
-      // 400 MHz
+      // 800 MHz
       forever begin
-	 #12.5ns;
+	 #6.25ns;
 	 aclk = ~aclk;
       end
    end
@@ -24,9 +24,9 @@ module IVS_CLK_GEN(/*AUTOARG*/
    initial begin
       hclk = 1'b0;
       #3.7ns;
-      // 200 MHz
+      // 400 MHz
       forever begin
-	 #25ns;
+	 #12.5ns;
 	 hclk = ~hclk;
       end
    end

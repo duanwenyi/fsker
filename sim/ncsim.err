@@ -1,0 +1,30 @@
+csi-ncsim - CSI: Command line:
+ncsim
+    TH
+    -nontcglitch
+    -errormax 1
+    -input wave.tcl
+
+csi-ncsim - CSI: *F,INTERR: INTERNAL EXCEPTION
+Observed simulation time : 478800 PS + 0
+-----------------------------------------------------------------
+The tool has encountered an unexpected condition and must exit.
+Contact Cadence Design Systems customer support about this
+problem and provide enough information to help us reproduce it,
+including the logfile that contains this error message.
+  TOOL:	ncsim	13.10-p001
+  HOSTNAME: localhost.localdomain
+  OPERATING SYSTEM: Linux 3.10.0-123.el7.x86_64 #1 SMP Mon May 5 11:16:57 EDT 2014 x86_64
+  MESSAGE: sv_seghandler - trapno -1 addr(0x0000000C)
+-----------------------------------------------------------------
+
+csi-ncsim - CSI: Cadence Support Investigation, recording details
+Simulator Snap Shot: gd (SSS_GD) in snapshot worklib.TH:module (SSS)
+User Code in function: __kernel_rt_sigreturn offset 0
+Native Code Stream (t=478800000): Always stmt (file: ../shm/tb/tb_eva.sv, line: 195 in worklib.TB_EVA [module])
+	Verilog Syntax Tree: always statement declaration (VST_D_ALWAYS_STMT) in module worklib.TB_EVA:module (VST)
+	File: ../shm/tb/tb_eva.sv, line 203, position 20
+	Scope: TB_EVA
+	Source  : 	  eva_ahb_bus_func_o( htrans,
+	Position: 	                   ^
+csi-ncsim - CSI: investigation complete took 0.000 secs, send this file to Cadence Support

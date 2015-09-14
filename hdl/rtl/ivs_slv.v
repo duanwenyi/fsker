@@ -1,3 +1,4 @@
+`include "ivs_def.v"
 
 module IVS_SLV(/*AUTOARG*/
    // Outputs
@@ -48,19 +49,19 @@ module IVS_SLV(/*AUTOARG*/
    wire 		wr_en = cs_en &  hwrite;
    wire 		rd_en = cs_en & ~hwrite;
 
-   wire [31:0] 		hrdata_s = ( {32{addr_ofst == 10'h000}} & glb_ctrl |
+   wire [31:0] 		hrdata_s = ( {32{addr_ofst == `IVS_CTRL}} & glb_ctrl |
       
-				     {32{addr_ofst == 10'h100}} & cfg_par0 |
-				     {32{addr_ofst == 10'h104}} & cfg_par1 |
-				     {32{addr_ofst == 10'h108}} & cfg_par2 |
-				     {32{addr_ofst == 10'h10c}} & cfg_par3 |
-				     {32{addr_ofst == 10'h110}} & cfg_par4 |
-				     {32{addr_ofst == 10'h114}} & cfg_par5 |
-				     {32{addr_ofst == 10'h118}} & cfg_par6 |
-				     {32{addr_ofst == 10'h11c}} & cfg_par7
+				     {32{addr_ofst == `IVS_PAR0}} & cfg_par0 |
+				     {32{addr_ofst == `IVS_PAR1}} & cfg_par1 |
+				     {32{addr_ofst == `IVS_PAR2}} & cfg_par2 |
+				     {32{addr_ofst == `IVS_PAR3}} & cfg_par3 |
+				     {32{addr_ofst == `IVS_PAR4}} & cfg_par4 |
+				     {32{addr_ofst == `IVS_PAR5}} & cfg_par5 |
+				     {32{addr_ofst == `IVS_PAR6}} & cfg_par6 |
+				     {32{addr_ofst == `IVS_PAR7}} & cfg_par7
 				     );
 
-   wire 		sw_rst_s = wr_en_ff && (addr_ofst == 10'h004) && hwdata[0];
+   wire 		sw_rst_s = wr_en_ff && (addr_ofst == `IVS_TRIG) && hwdata[0];
 
    assign hready_out = ~cs_en_ff;
    assign hresp      = 2'b0;

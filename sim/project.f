@@ -1,3 +1,4 @@
++incdir+../hdl/rtl
 
 ../hdl/rtl/ivs_slv.v
 ../hdl/rtl/ivs_top.v

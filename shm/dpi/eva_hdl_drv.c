@@ -12,7 +12,7 @@
 EVA_HDL_t eva_bus_t;
 
 //#define EVA_DEBUG
-#define EVA_CONTROL_C_OUT
+//#define EVA_CONTROL_C_OUT
 
 void eva_handler(int s){
   fprintf(stderr, " @EVA catch a SYSTEM interrupt .\n");  
@@ -583,7 +583,7 @@ void evaScopeGetHandle(){
 
 }
 
-#ifndef USING_VCS_COMPILER
+#if 0
 static s_vpi_systf_data systfList[] = {
   {vpiSysTask, 0, "$evaScopeGetHandle", evaScopeGetHandle, 0, 0, 0},
   {0},

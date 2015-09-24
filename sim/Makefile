@@ -18,7 +18,7 @@ LIBS        =
 # HDL comple options when using VCS
 VCS_SIM_EXEC   = ./simv_exec
 VCS_CMPL_OPTS  = -sverilog +v2k +libext+.v+.sv +verilog2001ext+.v +vcs+lic+wait +plusarg_save +notimingcheck +nospecify -timescale=1ns/10ps -debug
-VCS_CMPL_OPTS += +incdir+$(VCS_HOME)/etc/vmm -P $(EVA_PRO_PATH)/shm/tb/eva_vpi.tab +vpi
+VCS_CMPL_OPTS += +incdir+$(VCS_HOME)/etc/vmm +vpi
 VCS_CMPL_OPTS += -Mdir=./output/vmm_test_scrc -o $(VCS_SIM_EXEC) -l ./output/vmm_test.cmp_log
 VCS_CMPL_OPTS += +vpdfile+simv.vpd
 

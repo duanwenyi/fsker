@@ -172,6 +172,10 @@ vi style of % jumping to matching brace."
 (global-set-key [?\C-.] 'ffap-copy-string-as-kill)
 (global-set-key [?\C-/] 'isearch-symbol-at-point)
 
+(setq-default c-basic-offset 4
+			  tab-width 4
+			  indent-tabs-mode t)
+
 ;;; Code: 
 (defun isearch-yank-regexp (regexp) 
   "Pull REGEXP into search regexp." 

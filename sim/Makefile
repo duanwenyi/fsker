@@ -29,7 +29,8 @@ VCS_RUN_OPTS   = -l ./simv.log -ucli -i vcs_sim.tcl
 ## HDL compile options
 TOP_MODULE    = TH
 DUT_CMPL_OPTS = -sv -update
-DUT_ELAB_OPTS = -delay_mode zero -notimingchecks -noneg_tchk -access +rwc -loadvpi ./libdpi.so:setup_eva_callbacks -timescale 1ns/10ps ${TOP_MODULE}
+#-loadvpi ./libdpi.so:setup_eva_callbacks  ## remove by using DPI interface replace VPI
+DUT_ELAB_OPTS = -delay_mode zero -notimingchecks -noneg_tchk -access +rwc -timescale 1ns/10ps ${TOP_MODULE}
 DUT_RUN_OPTS  = ${TOP_MODULE} -nontcglitch -errormax 1 -input wave.tcl
 
 HDL_COMPILER = ncvlog

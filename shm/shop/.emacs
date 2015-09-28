@@ -166,6 +166,8 @@ vi style of % jumping to matching brace."
 (global-set-key "\C-a" 'mark-whole-buffer)
 (global-set-key [C-backspace] 'backward-kill-word)
 (global-set-key [C-delete] 'kill-word)
+
+(define-key isearch-mode-map [escape] 'isearch-abort)
 (global-set-key [escape] 'keyboard-escape-quit)
 
 (global-set-key [?\C-'] 'revert-buffer)

@@ -156,7 +156,7 @@ void eva_ahb_bus_func_o( svBitVecVal *htrans,
 }
 
 void eva_axi_rd_func_i( const svBit        arvalid,
-			const svBitVecVal *arid,        // [3:0]
+			const svBitVecVal *arid,        // [5:0]
 			const svBitVecVal *araddr_low,
 			const svBitVecVal *araddr_high,
 			const svBitVecVal *arlen,       // [5:0]
@@ -175,7 +175,7 @@ void eva_axi_rd_func_i( const svBit        arvalid,
 
 
   eva_bus_t.arvalid		=  arvalid;   
-  eva_bus_t.arid		= *arid       & 0xF;      
+  eva_bus_t.arid		= *arid       & 0x3F;      
   eva_bus_t.araddr_low		= *araddr_low;
   eva_bus_t.araddr_high 	= *araddr_high;
   eva_bus_t.arlen		= *arlen      & 0x3F;     
@@ -326,7 +326,7 @@ void eva_axi_rd_func_o( svBit             *arready,
 }
 
 void eva_axi_wr_func_i( const svBit        awvalid,
-			const svBitVecVal *awid,        // [3:0]
+			const svBitVecVal *awid,        // [5:0]
 			const svBitVecVal *awaddr_low,
 			const svBitVecVal *awaddr_high,
 			const svBitVecVal *awlen,       // [5:0]
@@ -343,7 +343,7 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 
 			const svBit        wvalid,
 			const svBit        wlast,
-			const svBitVecVal *wid,                // [3:0]
+			const svBitVecVal *wid,                // [5:0]
 			const svBitVecVal *wdata_0,            // [31:0]
 			const svBitVecVal *wdata_1, 
 			const svBitVecVal *wdata_2,
@@ -353,7 +353,7 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 
 
   eva_bus_t.awvalid    =  awvalid; 
-  eva_bus_t.awid       = *awid       & 0xF; 
+  eva_bus_t.awid       = *awid       & 0x3F; 
   eva_bus_t.awaddr_low = *awaddr_low; 
   eva_bus_t.awaddr_high= *awaddr_high; 
   eva_bus_t.awlen      = *awlen      & 0x3F; 

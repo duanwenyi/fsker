@@ -8,8 +8,8 @@
 #define EVA_AHB_NONSEQ  2
 #define EVA_AHB_SEQ     3
 
-#define EVA_AXI_MAX_OUTSTANDING 4
-#define EVA_AXI_MAX_PORT 16
+#define EVA_AXI_MAX_OUTSTANDING 16
+#define EVA_AXI_MAX_PORT 64
 #define EVA_SCOPE_CMP_MODE_EQUAL 1
 
 // AXI Port Cell
@@ -54,7 +54,7 @@ typedef struct EVA_HDL{
 
   // AXI read
   uint32_t arvalid;
-  uint32_t arid;        // [3:0]
+  uint32_t arid;        // [5:0]
   uint32_t araddr_low;
   uint32_t araddr_high;
   uint32_t arlen;       // [5:0]
@@ -70,7 +70,7 @@ typedef struct EVA_HDL{
 
   // AXI write
   uint32_t awvalid;
-  uint32_t awid;        // [3:0]
+  uint32_t awid;        // [5:0]
   uint32_t awaddr_low;
   uint32_t awaddr_high;
   uint32_t awlen;       // [5:0]
@@ -88,7 +88,7 @@ typedef struct EVA_HDL{
   uint32_t wready_pre;
   uint32_t wvalid;
   uint32_t wlast;
-  uint32_t wid;                // [3:0]
+  uint32_t wid;                // [5:0]
   uint32_t wdata_0;            // [31:0]
   uint32_t wdata_1; 
   uint32_t wdata_2;
@@ -120,7 +120,7 @@ void eva_ahb_bus_func_o( svBitVecVal *htrans,
 			 );
 
 void eva_axi_rd_func_i( const svBit        arvalid,
-			const svBitVecVal *arid,        // [3:0]
+			const svBitVecVal *arid,        // [5:0]
 			const svBitVecVal *araddr_low,
 			const svBitVecVal *araddr_high,
 			const svBitVecVal *arlen,       // [5:0]
@@ -138,7 +138,7 @@ void eva_axi_rd_func_i( const svBit        arvalid,
 
 void eva_axi_rd_func_o( svBit             *arready,
 			svBit             *rvalid,
-			svBitVecVal       *rid,                // [3:0]
+			svBitVecVal       *rid,                // [5:0]
 			svBitVecVal       *rdata_0,            // [31:0]
 			svBitVecVal       *rdata_1, 
 			svBitVecVal       *rdata_2,
@@ -149,7 +149,7 @@ void eva_axi_rd_func_o( svBit             *arready,
 
 
 void eva_axi_wr_func_i( const svBit        awvalid,
-			const svBitVecVal *awid,        // [3:0]
+			const svBitVecVal *awid,        // [5:0]
 			const svBitVecVal *awaddr_low,
 			const svBitVecVal *awaddr_high,
 			const svBitVecVal *awlen,       // [5:0]
@@ -166,7 +166,7 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 		      
 			const svBit        wvalid,
 			const svBit        wlast,
-			const svBitVecVal *wid,                // [3:0]
+			const svBitVecVal *wid,                // [5:0]
 			const svBitVecVal *wdata_0,            // [31:0]
 			const svBitVecVal *wdata_1, 
 			const svBitVecVal *wdata_2,

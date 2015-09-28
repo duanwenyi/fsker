@@ -50,7 +50,7 @@ module TB_EVA(/*AUTOARG*/
 													);
    
    import "DPI-C" function void eva_axi_rd_func_i( input bit        arvalid,
-												   input bit [3:0] 	arid, // [3:0]
+												   input bit [5:0] 	arid, // [5:0]
 												   input bit [31:0] araddr_low,
 												   input bit [31:0] araddr_high,
 												   input bit [5:0] 	arlen, // [5:0]
@@ -68,7 +68,7 @@ module TB_EVA(/*AUTOARG*/
 
    import "DPI-C" function void eva_axi_rd_func_o( output bit        arready,
 												   output bit 		 rvalid,
-												   output bit [3:0]  rid, // [3:0]
+												   output bit [5:0]  rid, // [5:0]
 												   output bit [31:0] rdata_0, // [31:0]
 												   output bit [31:0] rdata_1, 
 												   output bit [31:0] rdata_2,
@@ -78,7 +78,7 @@ module TB_EVA(/*AUTOARG*/
 												   );
    
    import "DPI-C" function void eva_axi_wr_func_i( input bit        awvalid,
-												   input bit [3:0] 	awid, // [3:0]
+												   input bit [5:0] 	awid, // [5:0]
 												   input bit [31:0] awaddr_low,
 												   input bit [31:0] awaddr_high,
 												   input bit [5:0] 	awlen, // [5:0]
@@ -95,7 +95,7 @@ module TB_EVA(/*AUTOARG*/
    
 												   input bit 		wvalid,
 												   input bit 		wlast,
-												   input bit [3:0] 	wid, // [3:0]
+												   input bit [5:0] 	wid, // [5:0]
 												   input bit [31:0] wdata_0, // [31:0]
 												   input bit [31:0] wdata_1, 
 												   input bit [31:0] wdata_2,
@@ -108,7 +108,7 @@ module TB_EVA(/*AUTOARG*/
 	  
 												   output bit 		 bvalid,
 												   output bit [ 1:0] bresp,
-												   output bit [ 3:0] bid
+												   output bit [ 5:0] bid
 												   );
 
    import "DPI-C" function void evaScopeGetHandle();
@@ -137,7 +137,7 @@ module TB_EVA(/*AUTOARG*/
    
    output bit 			 arready;                     
    input bit 			 arvalid;                     
-   input bit [3:0] 		 arid;        // [3:0]        
+   input bit [5:0] 		 arid;        // [3:0]        
    input bit [31:0] 	 araddr;                  
    input bit [5:0] 		 arlen;       // [5:0]        
    input bit [2:0] 		 arsize;      // [2:0]  3'b100
@@ -151,7 +151,7 @@ module TB_EVA(/*AUTOARG*/
    
    input bit 			 rready;                      
    output bit 			 rvalid;                      
-   output bit [3:0] 	 rid;                // [3:0] 
+   output bit [5:0] 	 rid;                // [3:0] 
    output bit [127:0] 	 rdata;            // [31:0]
    output bit 			 rlast;                       
    output bit [1:0] 	 rresp;   // [1:0] 
@@ -159,7 +159,7 @@ module TB_EVA(/*AUTOARG*/
 
    output bit 			 awready;                     
    input bit 			 awvalid;                      
-   input bit [3:0] 		 awid;        // [3:0]         
+   input bit [5:0] 		 awid;        // [3:0]         
    input bit [31:0] 	 awaddr;                   
    input bit [5:0] 		 awlen;       // [5:0]         
    input bit [2:0] 		 awsize;      // [2:0]  3'b100 
@@ -174,18 +174,22 @@ module TB_EVA(/*AUTOARG*/
    output bit 			 wready;                       
    input bit 			 wvalid;                       
    input bit 			 wlast;                        
-   input bit [3:0] 		 wid;                // [3:0]  
+   input bit [5:0] 		 wid;                // [3:0]  
    input bit [127:0] 	 wdata;            // [31:0]    
    input bit [15:0] 	 wstrb ;   // [15:0] 
 
    output bit 			 bvalid;
    output bit [ 1:0] 	 bresp;
-   output bit [ 3:0] 	 bid;
+   output bit [ 5:0] 	 bid;
    input 				 bready;
    
 
    bit 					 stop;
    reg [63:0] 			 tick;    // Using for debug
+
+   assign (weak1,weak0)  arid = 6'b0;
+   assign (weak1,weak0)  wrid = 6'b0;
+   
 
    assign hsize  = 3'b10;
    assign hburst = 3'b0;

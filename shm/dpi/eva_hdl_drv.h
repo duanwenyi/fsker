@@ -12,6 +12,8 @@
 #define EVA_AXI_MAX_PORT 64
 #define EVA_SCOPE_CMP_MODE_EQUAL 1
 
+#define GEN_DMA_ADDR64(high, low) ( ( (uint64_t)(high) <<32 ) | (low))
+
 // AXI Port Cell
 typedef struct AXI_PCELL{
   uint32_t valid;

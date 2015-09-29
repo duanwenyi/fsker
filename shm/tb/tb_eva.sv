@@ -138,7 +138,7 @@ module TB_EVA(/*AUTOARG*/
    output bit 			 arready;                     
    input bit 			 arvalid;                     
    input bit [5:0] 		 arid;        // [3:0]        
-   input bit [31:0] 	 araddr;                  
+   input bit [63:0] 	 araddr;                  
    input bit [5:0] 		 arlen;       // [5:0]        
    input bit [2:0] 		 arsize;      // [2:0]  3'b100
    input bit [1:0] 		 arburst;     // [1:0]  2'b01 
@@ -160,7 +160,7 @@ module TB_EVA(/*AUTOARG*/
    output bit 			 awready;                     
    input bit 			 awvalid;                      
    input bit [5:0] 		 awid;        // [3:0]         
-   input bit [31:0] 	 awaddr;                   
+   input bit [63:0] 	 awaddr;                   
    input bit [5:0] 		 awlen;       // [5:0]         
    input bit [2:0] 		 awsize;      // [2:0]  3'b100 
    input bit [1:0] 		 awburst;     // [1:0]  2'b01  
@@ -217,8 +217,8 @@ module TB_EVA(/*AUTOARG*/
      if(arest_n) begin
 		eva_axi_rd_func_i( arvalid,
 						   arid,        // [3:0]
-						   araddr,
-						   32'b0,
+						   araddr[31:0],
+						   araddr[63:32],
 						   arlen,       // [5:0]
 						   arsize,      // [2:0]  3'b100  (16 bytes)
 						   arburst,     // [1:0]  2'b01
@@ -249,8 +249,8 @@ module TB_EVA(/*AUTOARG*/
      if(arest_n) begin
 		eva_axi_wr_func_i( awvalid,
 						   awid, // [3:0]
-						   awaddr,
-						   32'b0,
+						   awaddr[31:0],
+						   awaddr[63:32],
 						   awlen, // [5:0]
 						   awsize, // [2:0]  3'b100  (16 bytes)
 						   awburst, // [1:0]  2'b01

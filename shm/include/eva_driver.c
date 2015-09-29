@@ -9,6 +9,7 @@ pthread_t eva_monitor;
 
 #define EVA_SAFE_MODE
 //#define EVA_DEBUG
+//#define EVA_AXI_DEBUG
 
 EVA_INTR_REG_t intr_reg;
 
@@ -124,6 +125,15 @@ void eva_axi_rd_handler(void){
 			ptr++;
 			eva_t->axi_r_data3 = *ptr;
 
+#ifdef EVA_AXI_DEBUG
+	fprintf(stderr," @AXI [R] addr: 0x%llx - data: 0x%8x 0x%8x 0x%8x 0x%8x \n",
+			eva_t->axi_r_addr,
+			eva_t->axi_r_data3,
+			eva_t->axi_r_data2,
+			eva_t->axi_r_data1,
+			eva_t->axi_r_data0
+			);
+#endif
 			barrier();
 			eva_t->axi_r_sync = EVA_SYNC_ACK;
 		}else{
@@ -143,6 +153,15 @@ void eva_axi_wr_handler(void){
 #endif  
 	while(1){
 		if(eva_t->axi_w_sync == EVA_SYNC){
+#ifdef EVA_AXI_DEBUG
+			fprintf(stderr," @AXI [W] addr: 0x%llx  strob: 0x%x - data: 0x%8x 0x%8x 0x%8x 0x%8x \n",
+					eva_t->axi_w_addr, eva_t->axi_w_strb,
+					eva_t->axi_w_data3,
+					eva_t->axi_w_data2,
+					eva_t->axi_w_data1,
+					eva_t->axi_w_data0
+					);
+#endif
 			if(eva_t->axi_w_strb == 0xFFFF){
 				uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
 				*ptr = eva_t->axi_w_data0;
@@ -231,8 +250,7 @@ void *eva_interrupt_handler(void *){
 #else
 void eva_interrupt_handler(void){
 #endif
-	memset(&intr_reg, 0, sizeof(EVA_INTR_REG_t));
-  
+
 	int  cc = 0;
 	while(1){
 		if( (intr_reg.valid_bits != 0) && (eva_t->intr != 0)){
@@ -263,7 +281,7 @@ void eva_interrupt_handler(void){
 			 intr_reg.func[intr_id]  = user_func;
 			 intr_reg.valid[intr_id] = 1;
 			 intr_reg.valid_bits |= (1<< intr_id);
-			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%x] is register OK.\n", intr_id, (size_t)user_func); 
+			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%x] is register OK. [0x%x]\n", intr_id, (size_t)user_func, intr_reg.valid_bits); 
 		 }else{
 			 fprintf(stderr, " @EVA intrrupt register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
 		 }
@@ -278,6 +296,7 @@ void eva_interrupt_handler(void){
 		 intr_reg.func[intr_id]  = NULL;
 		 intr_reg.valid[intr_id] = 0;
 		 intr_reg.valid_bits &= ~(1<< intr_id);
+		 fprintf(stderr, " @EVA intrrupt unregister [ID]:%d . [0x%x]\n", intr_id, intr_reg.valid_bits); 
 	 }else{
 		 fprintf(stderr, " @EVA intrrupt unregister : [ID]:%d exceed MAX support numbers [%d].\n", intr_id, EVA_MAX_INT_NUM); 
 	 }
@@ -285,6 +304,7 @@ void eva_interrupt_handler(void){
 
 void eva_drv_init(){
 	int ret;
+	memset(&intr_reg, 0, sizeof(EVA_INTR_REG_t));
 
 	eva_t = (EVA_BUS_ST_t *)eva_map(0);
 	if( eva_t->control != EVA_BUS_INIT){

@@ -19,6 +19,8 @@ typedef struct EMEM_UNIT{
   uint32_t  LastAccAddr;
   uint32_t  LastAccMask;
   
+  uint32_t  AddrMask;
+
   // Actual Memory Store DATA .
   uint8_t  *mem;
   

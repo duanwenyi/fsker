@@ -45,15 +45,15 @@ typedef struct EVA_BUS_ST {
   uint32_t ahb_data;
 
   uint32_t axi_w_sync;
-  uint32_t axi_w_addr;
   uint32_t axi_w_strb;
   uint32_t axi_w_data0;
   uint32_t axi_w_data1;
   uint32_t axi_w_data2;
   uint32_t axi_w_data3;
+  uint64_t axi_w_addr;
 
+  uint64_t axi_r_addr;
   uint32_t axi_r_sync;
-  uint32_t axi_r_addr;
   uint32_t axi_r_data0;
   uint32_t axi_r_data1;
   uint32_t axi_r_data2;

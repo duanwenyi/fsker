@@ -12,6 +12,7 @@
 EVA_HDL_t eva_bus_t;
 
 //#define EVA_DEBUG
+//#define EVA_AXI_DEBUG
 //#define EVA_CONTROL_C_OUT
 
 void eva_handler(int s){
@@ -223,8 +224,8 @@ void eva_axi_rd_func_o( svBit             *arready,
       //fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI read command \n", eva_bus_t.awid );
     }else if(!eva_bus_t.axi_r[eva_bus_t.arid].valid){
 
-      eva_bus_t.axi_r[eva_bus_t.arid].addr_base  = eva_bus_t.araddr_low;
-      eva_bus_t.axi_r[eva_bus_t.arid].cur_addr   = eva_bus_t.araddr_low;
+      eva_bus_t.axi_r[eva_bus_t.arid].addr_base  = GEN_DMA_ADDR64( eva_bus_t.araddr_high, eva_bus_t.araddr_low);
+      eva_bus_t.axi_r[eva_bus_t.arid].cur_addr   = eva_bus_t.axi_r[eva_bus_t.arid].addr_base;
       eva_bus_t.axi_r[eva_bus_t.arid].length     = eva_bus_t.arlen + 1;
       eva_bus_t.axi_r[eva_bus_t.arid].remain_len = eva_bus_t.axi_r[eva_bus_t.arid].length;
       eva_bus_t.axi_r[eva_bus_t.arid].burst      = eva_bus_t.arburst;
@@ -232,6 +233,16 @@ void eva_axi_rd_func_o( svBit             *arready,
       eva_bus_t.axi_r[eva_bus_t.arid].valid      = 1;
       eva_bus_t.axi_cur_rlock = rand()%10;
     
+#ifdef EVA_AXI_DEBUG
+	  fprintf(stderr," @AXI [R] ID[%d] - addr: 0x%llx  length: %d - burst: %d  size: %d\n",
+			  eva_bus_t.arid,
+			  eva_bus_t.axi_r[eva_bus_t.arid].addr_base,
+			  eva_bus_t.axi_r[eva_bus_t.arid].length,
+			  eva_bus_t.axi_r[eva_bus_t.arid].burst,
+			  eva_bus_t.axi_r[eva_bus_t.arid].size
+			  );
+#endif
+
       eva_bus_t.axi_rcmd_nums++;
       mark_active = 1;
     }
@@ -352,163 +363,173 @@ void eva_axi_wr_func_i( const svBit        awvalid,
 			){
 
 
-  eva_bus_t.awvalid    =  awvalid; 
-  eva_bus_t.awid       = *awid       & 0x3F; 
-  eva_bus_t.awaddr_low = *awaddr_low; 
-  eva_bus_t.awaddr_high= *awaddr_high; 
-  eva_bus_t.awlen      = *awlen      & 0x3F; 
-  eva_bus_t.awsize     = *awsize     & 0x7; 
-  eva_bus_t.awburst    = *awburst    & 0x3; 
-  eva_bus_t.awlock     =  awlock; 
-  eva_bus_t.awcache    = *awcache    & 0xF; 
-  eva_bus_t.awport     = *awport     & 0x7; 
-  eva_bus_t.awregion   = *awregion   & 0xF; 
-  eva_bus_t.awqos      = *awqos      & 0xF; 
-  eva_bus_t.awuser     = *awuser     & 0xFF; 
+	eva_bus_t.awvalid    =  awvalid; 
+	eva_bus_t.awid       = *awid       & 0x3F; 
+	eva_bus_t.awaddr_low = *awaddr_low; 
+	eva_bus_t.awaddr_high= *awaddr_high; 
+	eva_bus_t.awlen      = *awlen      & 0x3F; 
+	eva_bus_t.awsize     = *awsize     & 0x7; 
+	eva_bus_t.awburst    = *awburst    & 0x3; 
+	eva_bus_t.awlock     =  awlock; 
+	eva_bus_t.awcache    = *awcache    & 0xF; 
+	eva_bus_t.awport     = *awport     & 0x7; 
+	eva_bus_t.awregion   = *awregion   & 0xF; 
+	eva_bus_t.awqos      = *awqos      & 0xF; 
+	eva_bus_t.awuser     = *awuser     & 0xFF; 
 			   
-  eva_bus_t.bready     = bready;
+	eva_bus_t.bready     = bready;
 
-  eva_bus_t.wvalid     =  wvalid; 
-  eva_bus_t.wlast      =  wlast; 
-  eva_bus_t.wid        = *wid        & 0xF; 
-  eva_bus_t.wdata_0    = *wdata_0; 
-  eva_bus_t.wdata_1    = *wdata_1; 
-  eva_bus_t.wdata_2    = *wdata_2; 
-  eva_bus_t.wdata_3    = *wdata_3; 
-  eva_bus_t.wstrb      = *wstrb      & 0xFFFF; 
+	eva_bus_t.wvalid     =  wvalid; 
+	eva_bus_t.wlast      =  wlast; 
+	eva_bus_t.wid        = *wid        & 0xF; 
+	eva_bus_t.wdata_0    = *wdata_0; 
+	eva_bus_t.wdata_1    = *wdata_1; 
+	eva_bus_t.wdata_2    = *wdata_2; 
+	eva_bus_t.wdata_3    = *wdata_3; 
+	eva_bus_t.wstrb      = *wstrb      & 0xFFFF; 
 
 
 
 }
 
 void eva_axi_wr_func_o( svBit  *awready,
-			svBit  *wready,
+						svBit  *wready,
 
-			svBit  *bvalid,
-			svBitVecVal *bresp,
-			svBitVecVal *bid
-			){
-  int timeout = 0;
+						svBit  *bvalid,
+						svBitVecVal *bresp,
+						svBitVecVal *bid
+						){
+	int timeout = 0;
 
-  int mark_active = 0;
-  // PART I : COMMAND PROCESS
-  if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) ){
+	int mark_active = 0;
+	// PART I : COMMAND PROCESS
+	if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) ){
     
-    if( (eva_bus_t.axi_w[eva_bus_t.awid].burst != 1) || (eva_bus_t.axi_w[eva_bus_t.awid].size != 4) ){
-      fprintf(stderr," @EVA HDL not support parameter detected in AXI write command  burst %x , size %x\n",
-	      eva_bus_t.axi_w[eva_bus_t.awid].burst, eva_bus_t.axi_w[eva_bus_t.awid].size );
+		if( (eva_bus_t.awburst != 1) || (eva_bus_t.awsize != 4) ){
+			fprintf(stderr," @EVA HDL not support parameter detected in AXI write command  burst %x , size %x\n",
+					eva_bus_t.awburst, eva_bus_t.awsize );
 
-      //eva_bus_t.axi_w[eva_bus_t.awid].burst      = 1;  // INCR
-      //eva_bus_t.axi_w[eva_bus_t.awid].size       = 4;  // 16bytes
-      return ;
-    }else if(eva_bus_t.axi_w[eva_bus_t.awid].valid){
-      //fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI write command \n", eva_bus_t.arid );
-    }else if(!eva_bus_t.axi_w[eva_bus_t.awid].valid){
+			//eva_bus_t.axi_w[eva_bus_t.awid].burst      = 1;  // INCR
+			//eva_bus_t.axi_w[eva_bus_t.awid].size       = 4;  // 16bytes
+			return ;
+		}else if(eva_bus_t.axi_w[eva_bus_t.awid].valid){
+			//fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI write command \n", eva_bus_t.arid );
+		}else if(!eva_bus_t.axi_w[eva_bus_t.awid].valid){
 
-      eva_bus_t.axi_w[eva_bus_t.awid].addr_base  = eva_bus_t.awaddr_low;
-      eva_bus_t.axi_w[eva_bus_t.awid].cur_addr   = eva_bus_t.awaddr_low;
-      eva_bus_t.axi_w[eva_bus_t.awid].length     = eva_bus_t.awlen + 1;
-      eva_bus_t.axi_w[eva_bus_t.awid].remain_len = eva_bus_t.axi_w[eva_bus_t.awid].length;
-      eva_bus_t.axi_w[eva_bus_t.awid].burst      = eva_bus_t.awburst;
-      eva_bus_t.axi_w[eva_bus_t.awid].size       = eva_bus_t.awsize;
+			eva_bus_t.axi_w[eva_bus_t.awid].addr_base  = GEN_DMA_ADDR64( eva_bus_t.awaddr_high, eva_bus_t.awaddr_low);
+			eva_bus_t.axi_w[eva_bus_t.awid].cur_addr   = eva_bus_t.axi_w[eva_bus_t.awid].addr_base;
+			eva_bus_t.axi_w[eva_bus_t.awid].length     = eva_bus_t.awlen + 1;
+			eva_bus_t.axi_w[eva_bus_t.awid].remain_len = eva_bus_t.axi_w[eva_bus_t.awid].length;
+			eva_bus_t.axi_w[eva_bus_t.awid].burst      = eva_bus_t.awburst;
+			eva_bus_t.axi_w[eva_bus_t.awid].size       = eva_bus_t.awsize;
 
-      eva_bus_t.axi_w[eva_bus_t.awid].valid      = 1;
-      eva_bus_t.axi_cur_wlock = rand()%3;
+			eva_bus_t.axi_w[eva_bus_t.awid].valid      = 1;
+			eva_bus_t.axi_cur_wlock = rand()%3;
     
-      eva_bus_t.axi_wcmd_nums++;
-      mark_active = 1;
-    }
-  }
+#ifdef EVA_AXI_DEBUG
+	  fprintf(stderr," @AXI [W] ID[%d] - addr: 0x%llx  length: %d - burst: %d  size: %d\n",
+			  eva_bus_t.awid,
+			  eva_bus_t.axi_w[eva_bus_t.awid].addr_base,
+			  eva_bus_t.axi_w[eva_bus_t.awid].length,
+			  eva_bus_t.axi_w[eva_bus_t.awid].burst,
+			  eva_bus_t.axi_w[eva_bus_t.awid].size
+			  );
+#endif
+
+			eva_bus_t.axi_wcmd_nums++;
+			mark_active = 1;
+		}
+	}
   
-  if((eva_bus_t.axi_wcmd_nums <= EVA_AXI_MAX_OUTSTANDING) &&
-     mark_active && 
-     eva_bus_t.axi_r[eva_bus_t.awid].valid &&
-     (!eva_bus_t.axi_pre_awready)
-     )
-    *awready = 1;
-  else
-    *awready = 0;
+	if((eva_bus_t.axi_wcmd_nums <= EVA_AXI_MAX_OUTSTANDING) &&
+	   mark_active && 
+	   eva_bus_t.axi_w[eva_bus_t.awid].valid &&
+	   (!eva_bus_t.axi_pre_awready)
+	   )
+		*awready = 1;
+	else
+		*awready = 0;
 
-  eva_bus_t.axi_pre_awready = *awready;
+	eva_bus_t.axi_pre_awready = *awready;
 
-  // PART II : DATA PROCESS
-  if( (eva_bus_t.axi_wcmd_nums > 0 ) && 
-      (!((eva_bus_t.wid == eva_bus_t.awid) && eva_bus_t.awvalid)) &&
-      eva_bus_t.axi_w[eva_bus_t.wid].valid &&
-      (!eva_bus_t.axi_cur_wactive) && 
-      eva_bus_t.wvalid 
-      ){
-    eva_bus_t.axi_cur_wactive = 1;
-    eva_bus_t.axi_cur_wport   = eva_bus_t.wid;
-  }
-  // not suport AXI write data ahead command now !
+	// PART II : DATA PROCESS
+	if( (eva_bus_t.axi_wcmd_nums > 0 ) && 
+		(!((eva_bus_t.wid == eva_bus_t.awid) && eva_bus_t.awvalid)) &&
+		eva_bus_t.axi_w[eva_bus_t.wid].valid &&
+		(!eva_bus_t.axi_cur_wactive) && 
+		eva_bus_t.wvalid 
+		){
+		eva_bus_t.axi_cur_wactive = 1;
+		eva_bus_t.axi_cur_wport   = eva_bus_t.wid;
+	}
+	// not suport AXI write data ahead command now !
 
-  if(eva_bus_t.axi_cur_wactive && eva_bus_t.wvalid && eva_bus_t.wready_pre){
+	if(eva_bus_t.axi_cur_wactive && eva_bus_t.wvalid && eva_bus_t.wready_pre){
 
       
-    eva_bus_t.eva_t->axi_w_addr = eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr;
-    eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr += 16;
+		eva_bus_t.eva_t->axi_w_addr = eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr;
+		eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr += 16;
     
-    eva_bus_t.eva_t->axi_w_strb  = eva_bus_t.wstrb;
-    eva_bus_t.eva_t->axi_w_data0 = eva_bus_t.wdata_0;
-    eva_bus_t.eva_t->axi_w_data1 = eva_bus_t.wdata_1;
-    eva_bus_t.eva_t->axi_w_data2 = eva_bus_t.wdata_2;
-    eva_bus_t.eva_t->axi_w_data3 = eva_bus_t.wdata_3;
+		eva_bus_t.eva_t->axi_w_strb  = eva_bus_t.wstrb;
+		eva_bus_t.eva_t->axi_w_data0 = eva_bus_t.wdata_0;
+		eva_bus_t.eva_t->axi_w_data1 = eva_bus_t.wdata_1;
+		eva_bus_t.eva_t->axi_w_data2 = eva_bus_t.wdata_2;
+		eva_bus_t.eva_t->axi_w_data3 = eva_bus_t.wdata_3;
 
-    barrier();
-    eva_bus_t.eva_t->axi_w_sync = EVA_SYNC;
-    barrier();
+		barrier();
+		eva_bus_t.eva_t->axi_w_sync = EVA_SYNC;
+		barrier();
 
-    timeout = 0;
-    while(eva_bus_t.eva_t->axi_w_sync == EVA_SYNC){
-      timeout++;
-      if(timeout > 100000000){ // 1 million
-	fprintf(stderr," @EVA HDL axi_w_sync timeout , check SYSTEM !\n");
-	return ;
-      }
-    }
+		timeout = 0;
+		while(eva_bus_t.eva_t->axi_w_sync == EVA_SYNC){
+			timeout++;
+			if(timeout > 100000000){ // 1 million
+				fprintf(stderr," @EVA HDL axi_w_sync timeout , check SYSTEM !\n");
+				return ;
+			}
+		}
       
       
-    if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].remain_len > 0)
-      eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].remain_len--;
+		if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].remain_len > 0)
+			eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].remain_len--;
 
-    if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].remain_len == 0){
-      if( !eva_bus_t.wlast )
-	fprintf(stderr," ERROR @EVA HDL wlast not detected in a write burst last! @%x\n", eva_bus_t.dbg_id);
+		if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].remain_len == 0){
+			if( !eva_bus_t.wlast )
+				fprintf(stderr," ERROR @EVA HDL wlast not detected in a write burst last! @%x\n", eva_bus_t.dbg_id);
 
-      eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].valid = 0;
-      eva_bus_t.axi_cur_wactive = 0;
+			eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].valid = 0;
+			eva_bus_t.axi_cur_wactive = 0;
       
-      if(eva_bus_t.axi_wcmd_nums > 0)
-	eva_bus_t.axi_wcmd_nums--;
-      else
-	fprintf(stderr," ERROR @EVA HDL wlast when no write command detected! @%x\n", eva_bus_t.dbg_id);
-    }
+			if(eva_bus_t.axi_wcmd_nums > 0)
+				eva_bus_t.axi_wcmd_nums--;
+			else
+				fprintf(stderr," ERROR @EVA HDL wlast when no write command detected! @%x\n", eva_bus_t.dbg_id);
+		}
 
-  }
+	}
 
-  // *wready should update after eva_bus_t.axi_cur_wactive changed !
-  *wready = (rand()%5 != 0) && eva_bus_t.axi_cur_wactive;  
+	// *wready should update after eva_bus_t.axi_cur_wactive changed !
+	*wready = (rand()%5 != 0) && eva_bus_t.axi_cur_wactive;  
   
-  if(eva_bus_t.axi_cur_wlock > 0)
-    eva_bus_t.axi_cur_wlock--;
+	if(eva_bus_t.axi_cur_wlock > 0)
+		eva_bus_t.axi_cur_wlock--;
 
-  // brespone part
-  // simple method : using latest WR CMD
-  if((eva_bus_t.wlast && eva_bus_t.wvalid && eva_bus_t.wready_pre) ||
-     (!eva_bus_t.bready && eva_bus_t.bvalid_pre) // for simulator not supprt DPI signal hold ability
-     ){
-    *bid    = eva_bus_t.wid;
-    *bvalid = 1;
-  }else if(eva_bus_t.bready && eva_bus_t.bvalid_pre){
-    *bvalid = 0;
-  }
+	// brespone part
+	// simple method : using latest WR CMD
+	if((eva_bus_t.wlast && eva_bus_t.wvalid && eva_bus_t.wready_pre) ||
+	   (!eva_bus_t.bready && eva_bus_t.bvalid_pre) // for simulator not supprt DPI signal hold ability
+	   ){
+		*bid    = eva_bus_t.wid;
+		*bvalid = 1;
+	}else if(eva_bus_t.bready && eva_bus_t.bvalid_pre){
+		*bvalid = 0;
+	}
 
-  *bresp  = 0;                     // No error inject now
+	*bresp  = 0;                     // No error inject now
 
-  // Backup old value
-  eva_bus_t.bvalid_pre = *bvalid;  
-  eva_bus_t.wready_pre = *wready;
+	// Backup old value
+	eva_bus_t.bvalid_pre = *bvalid;  
+	eva_bus_t.wready_pre = *wready;
 }
 
 void eva_hdl_intr( const svBitVecVal *intr ){

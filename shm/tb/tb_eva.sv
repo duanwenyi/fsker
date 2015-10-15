@@ -23,8 +23,8 @@
 module TB_EVA(/*AUTOARG*/
    // Outputs
    htrans, hwrite, haddr, hwdata, hsize, hburst, hprot, hready_out,
-   arready, rvalid, rid, rdata, rlast, rresp, awready, wready, bvalid,
-   bresp, bid,
+   arready, rvalid, rid, ruser, rdata, rlast, rresp, awready, wready, 
+   bvalid, bresp, bid,
    // Inputs
    hclk, hrest_n, aclk, arest_n, hready_in, hresp, hrdata, arvalid,
    arid, araddr, arlen, arsize, arburst, arlock, arcache, arprot,
@@ -151,7 +151,8 @@ module TB_EVA(/*AUTOARG*/
    
    input bit 			 rready;                      
    output bit 			 rvalid;                      
-   output bit [5:0] 	 rid;                // [3:0] 
+   output bit [5:0] 	 rid;              // [5:0] 
+   output reg [4:0] 	 ruser;            // [4:0] 
    output bit [127:0] 	 rdata;            // [31:0]
    output bit 			 rlast;                       
    output bit [1:0] 	 rresp;   // [1:0] 
@@ -212,7 +213,14 @@ module TB_EVA(/*AUTOARG*/
 							  );
 		
      end
-   
+
+   // User defined signal !
+   always @(posedge aclk)
+     if(~arest_n) 
+	   ruser      <= 5'b0;
+	 else if(rready & rvalid)
+	   ruser      <= rlast ? 5'b0 : (ruser + 1);
+	 
    always @(posedge aclk)
      if(arest_n) begin
 		eva_axi_rd_func_i( arvalid,

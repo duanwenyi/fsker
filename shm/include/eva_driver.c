@@ -76,6 +76,8 @@ void *eva_monitor_handler(void *){
 	
 		uint64_t initial = 1;
 
+		uint64_t die_cnt = 0;
+
 		while(1){
 		
 			pre_tick = eva_t->tick;
@@ -98,6 +100,17 @@ void *eva_monitor_handler(void *){
 				( (uint64_t)(min_rate - eva_rate) < (eva_rate/4) )  // fix stop action case
 				)
 				min_rate = eva_rate;
+
+			if(eva_rate ==0){
+				die_cnt++;
+				if(die_cnt > 30){
+					fprintf(stderr, "\n @EVA Monitor: Simulator seem to be dead! Killing self ...\n");
+					usleep(200);
+					exit(0);
+				}
+			}else{
+				die_cnt = 0;
+			}
 
 			fprintf(stderr, " @EVA Monitor: %lld S  - HDL: 0x%llx CYCLE  --> %lld (CYCLE/S) [MAX/MIN][%lld / %lld] CYCLE/S\r",
 					local_time, eva_t->tick, eva_rate, max_rate,  min_rate);  
@@ -126,12 +139,12 @@ void eva_axi_rd_handler(void){
 			eva_t->axi_r_data3 = *ptr;
 
 #ifdef EVA_AXI_DEBUG
-	fprintf(stderr," @AXI [R] addr: 0x%llx - data: 0x%8x 0x%8x 0x%8x 0x%8x \n",
+	fprintf(stderr," @AXI [R] addr: 0x%llx - data: %8x %8x %8x %8x \n",
 			eva_t->axi_r_addr,
-			eva_t->axi_r_data3,
-			eva_t->axi_r_data2,
+			eva_t->axi_r_data0,
 			eva_t->axi_r_data1,
-			eva_t->axi_r_data0
+			eva_t->axi_r_data2,
+			eva_t->axi_r_data3
 			);
 #endif
 			barrier();

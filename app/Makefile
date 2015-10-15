@@ -1,4 +1,4 @@
-SLIB     = $(PWD)/..
+SLIB     = ..
 EVA_PATH = $(SLIB)/shm/include
 EVA_SRC  = $(wildcard $(EVA_PATH)/*.c)
 #EVA_OBJ  = $(EVA_SRC:.c=.o)

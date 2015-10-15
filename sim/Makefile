@@ -1,4 +1,4 @@
-EVA_PRO_PATH = $(PWD)/..
+EVA_PRO_PATH = ..
 EVA_PATH     = $(EVA_PRO_PATH)/shm/include
 EVA_SRC      = $(wildcard $(EVA_PRO_PATH)/shm/dpi/*.c) $(EVA_PATH)/eva.c
 #EVA_OBJ      = $(EVA_SRC:.c=.o) $(EVA_PRO_PATH)/shm/dpi/eva_hdl_drv.c

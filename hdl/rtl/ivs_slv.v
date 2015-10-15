@@ -10,21 +10,21 @@ module IVS_SLV(/*AUTOARG*/
    );
 
    input                hclk;
-   input 		hrst_n;
+   input 				hrst_n;
    
    // AHB BUS
-   input 		hsel;      
-   input [1:0] 		htrans;      
-   input 		hwrite;      
-   input [31:0] 	haddr;       
-   input [31:0] 	hwdata;      
-   input [2:0] 		hsize;     
-   input [2:0] 		hburst;    
-   input [3:0] 		hprot;     
-   input 		hready_in;
+   input 				hsel;      
+   input [1:0] 			htrans;      
+   input 				hwrite;      
+   input [31:0] 		haddr;       
+   input [31:0] 		hwdata;      
+   input [2:0] 			hsize;     
+   input [2:0] 			hburst;    
+   input [3:0] 			hprot;     
+   input 				hready_in;
    
-   output 		hready_out;
-   output [1:0] 	hresp; 
+   output 				hready_out;
+   output [1:0] 		hresp; 
    output reg [31:0] 	hrdata;
 
    output reg [31:0] 	cfg_par0;
@@ -37,31 +37,31 @@ module IVS_SLV(/*AUTOARG*/
    output reg [31:0] 	cfg_par7;
 
    output reg [31:0] 	glb_ctrl;
-   output reg 		sw_rst;
+   output reg 			sw_rst;
 
-   reg [9:0] 		addr_ofst;
+   reg [9:0] 			addr_ofst;
 
-   reg 			cs_en_ff;
-   reg 			wr_en_ff;
-   reg 			rd_en_ff;
+   reg 					cs_en_ff;
+   reg 					wr_en_ff;
+   reg 					rd_en_ff;
 
-   wire 		cs_en = hsel & (htrans != 2'b0) & hready_in;
-   wire 		wr_en = cs_en &  hwrite;
-   wire 		rd_en = cs_en & ~hwrite;
+   wire 				cs_en = hsel & (htrans != 2'b0) & hready_in;
+   wire 				wr_en = cs_en &  hwrite;
+   wire 				rd_en = cs_en & ~hwrite;
 
-   wire [31:0] 		hrdata_s = ( {32{addr_ofst == `IVS_CTRL}} & glb_ctrl |
+   wire [31:0] 			hrdata_s = ( {32{addr_ofst == `IVS_CTRL}} & glb_ctrl |
       
-				     {32{addr_ofst == `IVS_PAR0}} & cfg_par0 |
-				     {32{addr_ofst == `IVS_PAR1}} & cfg_par1 |
-				     {32{addr_ofst == `IVS_PAR2}} & cfg_par2 |
-				     {32{addr_ofst == `IVS_PAR3}} & cfg_par3 |
-				     {32{addr_ofst == `IVS_PAR4}} & cfg_par4 |
-				     {32{addr_ofst == `IVS_PAR5}} & cfg_par5 |
-				     {32{addr_ofst == `IVS_PAR6}} & cfg_par6 |
-				     {32{addr_ofst == `IVS_PAR7}} & cfg_par7
-				     );
+									 {32{addr_ofst == `IVS_PAR0}} & cfg_par0 |
+									 {32{addr_ofst == `IVS_PAR1}} & cfg_par1 |
+									 {32{addr_ofst == `IVS_PAR2}} & cfg_par2 |
+									 {32{addr_ofst == `IVS_PAR3}} & cfg_par3 |
+									 {32{addr_ofst == `IVS_PAR4}} & cfg_par4 |
+									 {32{addr_ofst == `IVS_PAR5}} & cfg_par5 |
+									 {32{addr_ofst == `IVS_PAR6}} & cfg_par6 |
+									 {32{addr_ofst == `IVS_PAR7}} & cfg_par7
+									 );
 
-   wire 		sw_rst_s = wr_en_ff && (addr_ofst == `IVS_TRIG) && hwdata[0];
+   wire 				sw_rst_s = wr_en_ff && (addr_ofst == `IVS_TRIG) && hwdata[0];
 
    assign hready_out = ~cs_en_ff;
    assign hresp      = 2'b0;

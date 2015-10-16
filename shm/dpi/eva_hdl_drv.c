@@ -34,7 +34,7 @@ void eva_hdl_init(){
     sigaction(SIGINT, &sigIntHandler, NULL); 
 #endif
 
-    eva_bus_t.eva_t = eva_map(1);
+    eva_bus_t.eva_t = (EVA_BUS_ST*)eva_map(1);
 
     eva_bus_t.eva_t->control = EVA_BUS_INIT;
 
@@ -573,7 +573,7 @@ void evaScopeGetHandle(){
         ){
         eva_bus_t.fp = fopen("./evaScopeGet.txt","r");
         if(eva_bus_t.fp == NULL){
-            vpi_printf("@evaScopeGetHandle: Open file ./evaScopeGet.txt FAILED !\n");
+            fprintf(stderr,"@evaScopeGetHandle: Open file ./evaScopeGet.txt FAILED !\n");
             return ;
         }
     
@@ -636,3 +636,5 @@ void (*vlog_startup_routines[VPI_MAXARRAY])() =
     0 /*** final entry must be 0 ***/
 };
 #endif
+
+

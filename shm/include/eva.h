@@ -24,45 +24,45 @@
 
 /*
   EVA BUS initial process :
-HDL:  EVA_BUS_INIT |             | EVA_BUS_ALVIE |              | EVA_BUS_INIT --> end simulation
-C  :               | EVA_BUS_ACK |               | EVA_BUS_STOP |
+  HDL:  EVA_BUS_INIT |             | EVA_BUS_ALVIE |              | EVA_BUS_INIT --> end simulation
+  C  :               | EVA_BUS_ACK |               | EVA_BUS_STOP |
   
-HDL:  EVA_BUS_INIT |             | EVA_BUS_ALVIE |               | EVA_BUS_INIT --> wait new ACK
-C  :               | EVA_BUS_ACK |               | EVA_BUS_PAUSE |
+  HDL:  EVA_BUS_INIT |             | EVA_BUS_ALVIE |               | EVA_BUS_INIT --> wait new ACK
+  C  :               | EVA_BUS_ACK |               | EVA_BUS_PAUSE |
 
 */
 
 #define EVA_WAIT_SYNC_MSK 0x1
 
 typedef struct EVA_BUS_ST {
-  uint32_t control;  // 
-  uint32_t resv;     // reserved  [0]: 1:wait sync
-  uint32_t intr;     // Interrupt , every bit for one register interrupt .
+    uint32_t control;  // 
+    uint32_t resv;     // reserved  [0]: 1:wait sync
+    uint32_t intr;     // Interrupt , every bit for one register interrupt .
 
-  uint32_t ahb_sync;
-  uint32_t ahb_write;
-  uint32_t ahb_addr;
-  uint32_t ahb_data;
+    uint32_t ahb_sync;
+    uint32_t ahb_write;
+    uint32_t ahb_addr;
+    uint32_t ahb_data;
 
-  uint32_t axi_w_sync;
-  uint32_t axi_w_strb;
-  uint32_t axi_w_data0;
-  uint32_t axi_w_data1;
-  uint32_t axi_w_data2;
-  uint32_t axi_w_data3;
-  uint64_t axi_w_addr;
+    uint32_t axi_w_sync;
+    uint32_t axi_w_strb;
+    uint32_t axi_w_data0;
+    uint32_t axi_w_data1;
+    uint32_t axi_w_data2;
+    uint32_t axi_w_data3;
+    uint64_t axi_w_addr;
 
-  uint64_t axi_r_addr;
-  uint32_t axi_r_sync;
-  uint32_t axi_r_data0;
-  uint32_t axi_r_data1;
-  uint32_t axi_r_data2;
-  uint32_t axi_r_data3;
+    uint64_t axi_r_addr;
+    uint32_t axi_r_sync;
+    uint32_t axi_r_data0;
+    uint32_t axi_r_data1;
+    uint32_t axi_r_data2;
+    uint32_t axi_r_data3;
   
-  // One 32 bits counter be full to 0xFFFF_FFFF only need about ~ 3 hour
-  // So 64 bits is better
-  uint64_t tick;
-  //void *shm;
+    // One 32 bits counter be full to 0xFFFF_FFFF only need about ~ 3 hour
+    // So 64 bits is better
+    uint64_t tick;
+    //void *shm;
 }EVA_BUS_ST_t, *EVA_BUS_ST_p;
 
 

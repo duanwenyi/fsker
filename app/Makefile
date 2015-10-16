@@ -10,18 +10,18 @@ OBJECTS      = $(patsubst %.c,%.o,$(SOURCES))
 
 CC          = gcc
 CXX         = g++
-DEFINES     = -m32
+#DEFINES     = -m32
 CFLAGS      = -pipe -O2 -Wall -fPIC $(DEFINES) -lpthread
 CXXFLAGS    = -pipe -O2 -Wall -fPIC $(DEFINES) -lpthread
 INCPATH     = -I$(EVA_PATH) -I.
-LINK        = gcc
+LINK        = g++
 LFLAGS      = $(DEFINES) -lpthread
 LIBS        = 
 
 BIN         = eva_demo
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCPATH) -c $< -o $@
+	$(CXX) $(CFLAGS) $(INCPATH) -c $< -o $@
 
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c $< -o $@

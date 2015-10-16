@@ -12,7 +12,7 @@ void *emem_init(uint32_t width, uint32_t depth, uint32_t mskbits){
 		sto->LinePerBytes = (width+7)/8;  // The memory width may not byte align !
 		sto->MaskPerBytes = sto->LinePerBytes/mskbits;
 
-		sto->mem = malloc(size);
+		sto->mem = (uint8_t *)malloc(size);
 		
 		sto->AddrMask = 0xFFFFFFFF;
 		while(cc>0){

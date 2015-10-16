@@ -6,9 +6,9 @@ EVA_OBJ      = $(patsubst %.c,%.o,$(EVA_SRC))
 
 CC          = gcc
 CXX         = g++
-DEFINES     = 
-CFLAGS      = -pipe -O2 -Wall -W -m32 $(DEFINES) -lpthread
-CXXFLAGS    = -pipe -O2 -Wall -W -m32 $(DEFINES) -lpthread
+#DEFINES     = -m32
+CFLAGS      = -pipe -O2 -Wall -W $(DEFINES) -lpthread
+CXXFLAGS    = -pipe -O2 -Wall -W $(DEFINES) -lpthread
 INCPATH     = -I$(EVA_PATH) -I$(EVA_PRO_PATH)/shm/dpi -I$(IES_HOME)/tools/include
 #-I$(VCS_HOME)/include
 LINK        = gcc
@@ -28,12 +28,13 @@ VCS_RUN_OPTS   = -l ./simv.log -ucli -i vcs_sim.tcl
 
 ## HDL compile options
 TOP_MODULE    = TH
-DUT_CMPL_OPTS = -sv -update
+NC_MODE       = -64BIT
+DUT_CMPL_OPTS = -sv -update ${NC_MODE}
 #-loadvpi ./libdpi.so:setup_eva_callbacks  ## remove by using DPI interface replace VPI
-DUT_ELAB_OPTS = -delay_mode zero -notimingchecks -noneg_tchk -access +rwc -timescale 1ns/10ps ${TOP_MODULE}
-DUT_RUN_OPTS  = ${TOP_MODULE} -nontcglitch -errormax 1 -input wave.tcl
+DUT_ELAB_OPTS = -delay_mode zero ${NC_MODE} -notimingchecks -noneg_tchk -access +rwc -timescale 1ns/10ps ${TOP_MODULE}
+DUT_RUN_OPTS  = ${TOP_MODULE} ${NC_MODE} -nontcglitch -errormax 1 -input wave.tcl
 
-HDL_COMPILER = ncvlog
+HDL_COMPILER  = ncvlog
 
 
 # VCS
@@ -43,10 +44,9 @@ eva:
 	make -f ../app/Makefile
 
 dpi:
-	$(CC) -Wall -g -fPIC -m32 $(EVA_SRC) $(INCPATH) -shared -o libdpi.so
+	$(CXX) -Wall -g -fPIC $(DEFINES) $(EVA_SRC) $(INCPATH) -shared -o libdpi.so
 
-svtb:
-	$(CC) -Wall -g -fPIC -m32 $(EVA_SRC) $(INCPATH) -shared -o libdpi.so
+svtb: dpi
 	ncvlog -f project.f $(DUT_CMPL_OPTS)
 	ncelab $(DUT_ELAB_OPTS)
 run:

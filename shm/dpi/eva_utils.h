@@ -27,6 +27,10 @@ typedef struct EMEM_UNIT{
 
 }EMEM_UNIT_t, *EMEM_UNIT_p;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void *emem_init(uint32_t width, uint32_t depth, uint32_t mskbits);
 
 void emem_wr_acc( void                   *handle,
@@ -42,5 +46,9 @@ void emem_rd_acc_i( void                   *handle,
 void emem_rd_acc_o( void                   *handle,
 		    svOpenArrayHandle       data
 		    );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -64,60 +64,60 @@ uint32_t eva_cpu_rd(uint32_t addr){
 #ifdef __cplusplus
 void *eva_monitor_handler(void *){
 #else
-	void eva_monitor_handler(void){
+void eva_monitor_handler(void){
 #endif
-		uint64_t local_time = 0;
+    uint64_t local_time = 0;
 	
-		uint64_t pre_tick = 0;
+    uint64_t pre_tick = 0;
 	
-		uint64_t max_rate = 0;
-		uint64_t min_rate = 0xFFFFFFFFFFF00000;
-		uint64_t eva_rate = 0;
+    uint64_t max_rate = 0;
+    uint64_t min_rate = 0xFFFFFFFFFFF00000;
+    uint64_t eva_rate = 0;
 	
-		uint64_t initial = 1;
+    uint64_t initial = 1;
 
-		uint64_t die_cnt = 0;
+    uint64_t die_cnt = 0;
 
-		while(1){
+    while(1){
 		
-			pre_tick = eva_t->tick;
-			sleep(1);
-			eva_rate = eva_t->tick - pre_tick;
+        pre_tick = eva_t->tick;
+        sleep(1);
+        eva_rate = eva_t->tick - pre_tick;
 
-			if(initial ){
-				if(eva_rate != 0){
-					max_rate = eva_rate;
-					min_rate = eva_rate;
-				}
-			}
+        if(initial ){
+            if(eva_rate != 0){
+                max_rate = eva_rate;
+                min_rate = eva_rate;
+            }
+        }
 		
-			local_time++;
-			if(eva_rate > max_rate)
-				max_rate = eva_rate;
+        local_time++;
+        if(eva_rate > max_rate)
+            max_rate = eva_rate;
 			
-			if( (eva_rate < min_rate)  && 
-				(eva_rate !=0 ) &&
-				( (uint64_t)(min_rate - eva_rate) < (eva_rate/4) )  // fix stop action case
-				)
-				min_rate = eva_rate;
+        if( (eva_rate < min_rate)  && 
+            (eva_rate !=0 ) &&
+            ( (uint64_t)(min_rate - eva_rate) < (eva_rate/4) )  // fix stop action case
+            )
+            min_rate = eva_rate;
 
-			if(eva_rate ==0){
-				die_cnt++;
-				if(die_cnt > 30){
-					fprintf(stderr, "\n @EVA Monitor: Simulator seem to be dead! Killing self ...\n");
-					usleep(200);
-					exit(0);
-				}
-			}else{
-				die_cnt = 0;
-			}
+        if(eva_rate ==0){
+            die_cnt++;
+            if(die_cnt > 30){
+                fprintf(stderr, "\n @EVA Monitor: Simulator seem to be dead! Killing self ...\n");
+                usleep(200);
+                exit(0);
+            }
+        }else{
+            die_cnt = 0;
+        }
 
-			fprintf(stderr, " @EVA Monitor: %lld S  - HDL: 0x%llx CYCLE  --> %lld (CYCLE/S) [MAX/MIN][%lld / %lld] CYCLE/S\r",
-					local_time, eva_t->tick, eva_rate, max_rate,  min_rate);  
+        fprintf(stderr, " @EVA Monitor: %lud S  - HDL: 0x%lux CYCLE  --> %lud (CYCLE/S) [MAX/MIN][%lud / %lud] CYCLE/S\r",
+                local_time, eva_t->tick, eva_rate, max_rate,  min_rate);  
 
-			initial = 0;
-		}
-	}
+        initial = 0;
+    }
+}
 
 
 #ifdef __cplusplus
@@ -294,7 +294,7 @@ void eva_interrupt_handler(void){
 			 intr_reg.func[intr_id]  = user_func;
 			 intr_reg.valid[intr_id] = 1;
 			 intr_reg.valid_bits |= (1<< intr_id);
-			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%x] is register OK. [0x%x]\n", intr_id, (size_t)user_func, intr_reg.valid_bits); 
+			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%lux] is register OK. [0x%x]\n", intr_id, (uint64_t)user_func, intr_reg.valid_bits); 
 		 }else{
 			 fprintf(stderr, " @EVA intrrupt register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
 		 }
@@ -392,7 +392,7 @@ void eva_drv_init(){
 	}
 #endif
 
-	fprintf(stderr, " @EVA SW initial OVER @0x%8x\n",(size_t)eva_t);  
+	fprintf(stderr, " @EVA SW initial OVER @0x%lux\n",(size_t)eva_t);  
 }
 
 void eva_drv_stop(){
@@ -451,9 +451,9 @@ void eva_drv_stop(){
 	 }
 
 	 if(mode == 1){
-		 fprintf(stderr,"OK @wait %s == 0x%x : after %dus @HDL : %lld CYCLE\n", path, value, tim, eva_t->tick);
+		 fprintf(stderr,"OK @wait %s == 0x%x : after %dus @HDL : %lud CYCLE\n", path, value, tim, eva_t->tick);
 	 }else{
-		 fprintf(stderr,"OK @wait %s != 0x%x : after %dus @HDL : %lld CYCLE\n", path, value, tim, eva_t->tick);
+		 fprintf(stderr,"OK @wait %s != 0x%x : after %dus @HDL : %lud CYCLE\n", path, value, tim, eva_t->tick);
 	 }
  }
 
@@ -468,5 +468,5 @@ void eva_drv_stop(){
 			 usleep(1);
 	 }while( grap < cycle);
   
-	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%lld -> %lld]\n", cycle, mark, mark2 );
+	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%lud -> %lud]\n", cycle, mark, mark2 );
  }

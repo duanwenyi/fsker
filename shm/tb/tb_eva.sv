@@ -189,6 +189,8 @@ module TB_EVA(/*AUTOARG*/
     bit                    stop;
     reg [63:0]             tick;    // Using for debug
 
+    reg                    active;
+
     assign (weak1,weak0)  arid = 6'b0;
     assign (weak1,weak0)  wrid = 6'b0;
     
@@ -200,7 +202,7 @@ module TB_EVA(/*AUTOARG*/
     assign hready_out = hready_in;
     
     always @(posedge hclk)
-      if(hrest_n) begin
+      if(active) begin
 		  eva_ahb_bus_func_i( hready_in,
 							  hresp,
 							  hrdata
@@ -217,7 +219,7 @@ module TB_EVA(/*AUTOARG*/
 
     
     always @(posedge aclk)
-      if(arest_n) begin
+      if(active) begin
 		  eva_axi_rd_func_i( arvalid,
 						     arid,        // [5:0]
 						     araddr[31:0],
@@ -250,7 +252,7 @@ module TB_EVA(/*AUTOARG*/
       end
 
     always @(posedge aclk)
-      if(arest_n) begin
+      if(active) begin
 		  eva_axi_wr_func_i( awvalid,
 						     awid,          // [5:0]
 						     awaddr[31:0],
@@ -288,7 +290,12 @@ module TB_EVA(/*AUTOARG*/
       end
     
     initial begin
+        active = 1'b0;
+
         @(posedge hrest_n );
+        wait(arest_n == 1'b1);
+
+        active = 1'b1;
         eva_hdl_init();
     end
     
@@ -299,7 +306,7 @@ module TB_EVA(/*AUTOARG*/
         tick  <= tick + 1;
     
     always @(posedge aclk)
-      if(arest_n) begin
+      if(active) begin
 		  eva_hdl_stop(stop);
 
 		  if(stop)begin
@@ -310,7 +317,7 @@ module TB_EVA(/*AUTOARG*/
       end
 
     always @(posedge aclk)
-      if(arest_n) begin
+      if(active) begin
 		  evaScopeGetHandle();
       end
     

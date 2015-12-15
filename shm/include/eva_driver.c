@@ -13,6 +13,8 @@ pthread_t eva_monitor;
 
 EVA_INTR_REG_t intr_reg;
 
+EVA_TC_REG_t eva_tc;
+
 void eva_cpu_wr(uint32_t addr, uint32_t data){
 #ifdef EVA_SAFE_MODE
 	while(eva_t->ahb_sync != EVA_SYNC_ACK){
@@ -393,6 +395,7 @@ void eva_drv_init(){
 #endif
 
 	fprintf(stderr, " @EVA SW initial OVER @0x%lux\n",(size_t)eva_t);  
+    EVA_TC_INIT();
 }
 
 void eva_drv_stop(){
@@ -469,4 +472,73 @@ void eva_drv_stop(){
 	 }while( grap < cycle);
   
 	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%lud -> %lud]\n", cycle, mark, mark2 );
+ }
+
+
+ void  EVA_TC_INIT(){
+     memset(&eva_tc, 0, sizeof(EVA_TC_REG_t));
+ }
+
+ void  EVA_TC_REGISTER(void (*func)(), const char *name){
+     if(eva_tc.tc_nums < EVA_MAX_TC_NUM){
+         eva_tc.tc[eva_tc.tc_nums].func = func;
+         strcpy( eva_tc.tc[eva_tc.tc_nums].name , name );
+         fprintf(stderr," @EVA Register TC  %3d) %s \n",  eva_tc.tc_nums, eva_tc.tc[eva_tc.tc_nums].name );
+         eva_tc.tc_nums++;
+     }
+ }
+
+ void  EVA_TC_SHOW_LIST(){
+     int cc;
+	 fprintf(stderr," *** EVA TC List *** \n" );
+     for(cc=0; cc<eva_tc.tc_nums; cc++){
+         fprintf(stderr," %3d) %s \n",  cc, eva_tc.tc[cc].name );
+     }
+ }
+
+ char *EVA_TC_GET_NAME_BY_ID(int id){
+     if(id < eva_tc.tc_nums){
+         return eva_tc.tc[id].name;
+     }else{
+         return NULL;
+     }
+ }
+
+ int   EVA_TC_GET_ID_BY_NAME(char *name){
+     int cc;
+
+     if(eva_tc.tc_nums > 0){
+         for(cc=0; cc<eva_tc.tc_nums; cc++){
+             if ( strcmp( eva_tc.tc[cc].name , name) == 0 ){
+                 break;
+             }
+         }
+         
+         if(cc > eva_tc.tc_nums)
+             return -1;
+         else
+             return cc;
+
+     }else{
+         return -1;
+     }
+
+ }
+
+ void  EVA_TC_RUN_BY_NAME(char *name){
+
+     int id = EVA_TC_GET_ID_BY_NAME( name );
+
+     if(id != -1){
+         EVA_TC_RUN_BY_ID(id);
+     }else{
+         fprintf(stderr," TC : %s is not found !\n", name );
+         EVA_TC_SHOW_LIST();
+     }
+ }
+ 
+ void  EVA_TC_RUN_BY_ID(int id){
+     if(id < eva_tc.tc_nums){
+         eva_tc.tc[id].func();
+     }
  }

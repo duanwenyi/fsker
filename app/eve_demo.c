@@ -4,6 +4,14 @@ void intr_sample(){
     fprintf(stderr,"I'm a lucky dog !\n");
 }
 
+void testcase_0(){
+    fprintf(stderr,"I'm testcase_0 !\n");
+}
+
+void testcase_1(){
+    fprintf(stderr,"I'm testcase_1 !\n");
+}
+
 int main(int argc, char **argv){
     int rd_val;
     int cc;
@@ -12,6 +20,13 @@ int main(int argc, char **argv){
     eva_drv_init();
   
     eva_intr_register(intr_sample, 0);
+
+    EVA_TC_REGISTER(testcase_0, "testcase_0");
+    EVA_TC_REGISTER(testcase_1, "testcase_1");
+    EVA_TC_SHOW_LIST();
+
+    EVA_TC_RUN_BY_NAME("testcase_0");
+    EVA_TC_RUN_BY_NAME("testcase_1");
 
     eva_cpu_wr(0x4,1);
 

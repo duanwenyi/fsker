@@ -532,6 +532,7 @@ void eva_drv_stop(){
      int id = EVA_TC_GET_ID_BY_NAME( name );
 
      if(id != -1){
+         fprintf(stderr," +going TC : %s \n\n", name );
          EVA_TC_RUN_BY_ID(id);
      }else{
          fprintf(stderr," TC : %s is not found !\n", name );

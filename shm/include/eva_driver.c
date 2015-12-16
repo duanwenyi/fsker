@@ -73,12 +73,14 @@ void eva_monitor_handler(void){
     uint64_t pre_tick = 0;
 	
     uint64_t max_rate = 0;
-    uint64_t min_rate = 0xFFFFFFFFFFF00000;
+    uint64_t min_rate = 0xFFFFFFFF;
     uint64_t eva_rate = 0;
 	
     uint64_t initial = 1;
 
     uint64_t die_cnt = 0;
+    
+    char     rota[4] = {'-','\\','|','/'};
 
     while(1){
 		
@@ -114,8 +116,8 @@ void eva_monitor_handler(void){
             die_cnt = 0;
         }
 
-        fprintf(stderr, " @EVA Monitor: %lud S  - HDL: 0x%lux CYCLE  --> %lud (CYCLE/S) [MAX/MIN][%lud / %lud] CYCLE/S\r",
-                local_time, eva_t->tick, eva_rate, max_rate,  min_rate);  
+        fprintf(stderr, " @EVA Monitor: %llu S %c HDL: 0x%llu CYCLE  --> %llu (CYCLE/S) [MAX/MIN][%llu / %llu] CYCLE/S\r",
+                local_time, rota[local_time%4], eva_t->tick, eva_rate, max_rate,  min_rate);  
 
         initial = 0;
     }
@@ -141,7 +143,7 @@ void eva_axi_rd_handler(void){
 			eva_t->axi_r_data3 = *ptr;
 
 #ifdef EVA_AXI_DEBUG
-	fprintf(stderr," @AXI [R] addr: 0x%llx - data: %8x %8x %8x %8x \n",
+	fprintf(stderr," @AXI [R] addr: 0x%llu - data: %8x %8x %8x %8x \n",
 			eva_t->axi_r_addr,
 			eva_t->axi_r_data0,
 			eva_t->axi_r_data1,
@@ -169,7 +171,7 @@ void eva_axi_wr_handler(void){
 	while(1){
 		if(eva_t->axi_w_sync == EVA_SYNC){
 #ifdef EVA_AXI_DEBUG
-			fprintf(stderr," @AXI [W] addr: 0x%llx  strob: 0x%x - data: 0x%8x 0x%8x 0x%8x 0x%8x \n",
+			fprintf(stderr," @AXI [W] addr: 0x%llu  strob: 0x%x - data: 0x%8x 0x%8x 0x%8x 0x%8x \n",
 					eva_t->axi_w_addr, eva_t->axi_w_strb,
 					eva_t->axi_w_data3,
 					eva_t->axi_w_data2,
@@ -296,7 +298,7 @@ void eva_interrupt_handler(void){
 			 intr_reg.func[intr_id]  = user_func;
 			 intr_reg.valid[intr_id] = 1;
 			 intr_reg.valid_bits |= (1<< intr_id);
-			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%lux] is register OK. [0x%x]\n", intr_id, (uint64_t)user_func, intr_reg.valid_bits); 
+			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%llu] is register OK. [0x%x]\n", intr_id, (uint64_t)user_func, intr_reg.valid_bits); 
 		 }else{
 			 fprintf(stderr, " @EVA intrrupt register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
 		 }
@@ -394,7 +396,7 @@ void eva_drv_init(){
 	}
 #endif
 
-	fprintf(stderr, " @EVA SW initial OVER @0x%lux\n",(size_t)eva_t);  
+	fprintf(stderr, " @EVA SW initial OVER @0x%llu\n",(size_t)eva_t);  
     EVA_TC_INIT();
 }
 
@@ -454,9 +456,9 @@ void eva_drv_stop(){
 	 }
 
 	 if(mode == 1){
-		 fprintf(stderr,"OK @wait %s == 0x%x : after %dus @HDL : %lud CYCLE\n", path, value, tim, eva_t->tick);
+		 fprintf(stderr,"OK @wait %s == 0x%x : after %dus @HDL : %llu CYCLE\n", path, value, tim, eva_t->tick);
 	 }else{
-		 fprintf(stderr,"OK @wait %s != 0x%x : after %dus @HDL : %lud CYCLE\n", path, value, tim, eva_t->tick);
+		 fprintf(stderr,"OK @wait %s != 0x%x : after %dus @HDL : %llu CYCLE\n", path, value, tim, eva_t->tick);
 	 }
  }
 
@@ -471,7 +473,7 @@ void eva_drv_stop(){
 			 usleep(1);
 	 }while( grap < cycle);
   
-	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%lud -> %lud]\n", cycle, mark, mark2 );
+	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%llu -> %llu]\n", cycle, mark, mark2 );
  }
 
 

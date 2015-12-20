@@ -61,6 +61,8 @@ sstb:
 srun:
 	$(VCS_SIM_EXEC) $(VCS_RUN_OPTS)
 
+elog:
+	./eva_demo 2>&1 | tee eva_run.log
 
 ipcs:
 	ipcs -m |grep $$USER |awk '{print $$2}' | xargs ipcrm -m

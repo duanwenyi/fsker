@@ -16,6 +16,9 @@ int main(int argc, char **argv){
     int rd_val;
     int cc;
     int ahb_rw_test = 10000;
+    
+    //if(freopen("eva_run.log", "w", stderr) == NULL)
+    //    fprintf(stderr,"error redirecting stdout\n");
 
     int *base = (int *) aligned_malloc( 1024, 16);
 

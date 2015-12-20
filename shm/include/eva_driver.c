@@ -185,88 +185,107 @@ void eva_axi_wr_handler(void){
 					eva_t->axi_w_data1,
 					eva_t->axi_w_data0
 					);
-#endif
-			if(eva_t->axi_w_strb == 0xFFFF){
-#ifdef EVA_AXI_ADDR_CHECK
-            eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr, 16);
-#endif
-				uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
-				*ptr = eva_t->axi_w_data0;
-				ptr++;
-				*ptr = eva_t->axi_w_data1;
-				ptr++;
-				*ptr = eva_t->axi_w_data2;
-				ptr++;
-				*ptr = eva_t->axi_w_data3;
-                
-			}else if(eva_t->axi_w_strb == 0xFFF){
-				uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
-				*ptr = eva_t->axi_w_data0;
-				ptr++;
-				*ptr = eva_t->axi_w_data1;
-				ptr++;
-				*ptr = eva_t->axi_w_data2;
-			}else if(eva_t->axi_w_strb == 0xFF){
-				uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
-				*ptr = eva_t->axi_w_data0;
-				ptr++;
-				*ptr = eva_t->axi_w_data1;
-			}else{
-				uint8_t * ptr = (uint8_t *)eva_t->axi_w_addr;
-				// DW0
-				if( eva_t->axi_w_strb & 0x1 )
-					*ptr = eva_t->axi_w_data0 & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x2 )
-					*ptr = (eva_t->axi_w_data0 >> 8 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x4 )
-					*ptr = (eva_t->axi_w_data0 >> 16 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x8 )
-					*ptr = (eva_t->axi_w_data0 >> 24 ) & 0xFF;
-				ptr++;
-				// DW1
-				if( eva_t->axi_w_strb & 0x10 )
-					*ptr = (eva_t->axi_w_data1 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x20 )
-					*ptr = (eva_t->axi_w_data1 >> 8 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x40 )
-					*ptr = (eva_t->axi_w_data1 >> 16 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x80 )
-					*ptr = (eva_t->axi_w_data1 >> 24 ) & 0xFF;
-				ptr++;
-				// DW2
-				if( eva_t->axi_w_strb & 0x100 )
-					*ptr = (eva_t->axi_w_data2 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x200 )
-					*ptr = (eva_t->axi_w_data2 >> 8 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x400 )
-					*ptr = (eva_t->axi_w_data2 >> 16 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x800 )
-					*ptr = (eva_t->axi_w_data2 >> 24 ) & 0xFF;
-				ptr++;
-				// DW3
-				if( eva_t->axi_w_strb & 0x1000 )
-					*ptr = (eva_t->axi_w_data3 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x2000 )
-					*ptr = (eva_t->axi_w_data3 >> 8 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x4000 )
-					*ptr = (eva_t->axi_w_data3 >> 16 ) & 0xFF;
-				ptr++;
-				if( eva_t->axi_w_strb & 0x8000 )
-					*ptr = (eva_t->axi_w_data3 >> 24 ) & 0xFF;
-				ptr++;
-			}
 
+            if(eva_t->error){
+                fprintf(stderr," @AXI [R] overflow detected !\n");
+            }
+#endif
+            uint32_t * ptr32 = (uint32_t *)eva_t->axi_w_addr;
+            uint8_t *  ptr8  = (uint8_t * )eva_t->axi_w_addr;
+
+#ifdef EVA_AXI_ADDR_CHECK
+            if(eva_t->axi_w_strb == 0xFFFF){
+                eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr, 16);
+            }else if(eva_t->axi_w_strb == 0xFF){
+                eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr, 8);
+            }else{
+                uint32_t header_ofst = 0;
+                uint32_t bits_sum    = 16;
+                while( header_ofst  < 16 ){
+                    if(eva_t->axi_w_strb & (1 << header_ofst)){
+                        break;
+                    }else{
+                        bits_sum--;
+                    }
+                    header_ofst++;
+                }
+
+                int cc = 15;
+                if(bits_sum > 0 ){
+                    while( cc > 0 ){
+                        if(eva_t->axi_w_strb & (1 << cc)){
+                            break;
+                        }else{
+                            bits_sum--;
+                        }
+                        cc--;
+                    }
+                }
+                
+                if(bits_sum > 0)
+                    eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr + header_ofst, bits_sum);
+            }
+
+            if(eva_t->error){
+                fprintf(stderr," @AXI [W] overflow detected !\n");
+            }else{
+#endif
+
+			if(eva_t->axi_w_strb & 0xF == 0xF){
+				ptr32[0] = eva_t->axi_w_data0;
+            }else if(eva_t->axi_w_strb & 0xF != 0x0){
+                if( eva_t->axi_w_strb & 0x1 )
+                    ptr8[0] = eva_t->axi_w_data0 & 0xF;
+                if( eva_t->axi_w_strb & 0x2 )
+                    ptr8[1] = (eva_t->axi_w_data0 >> 8) & 0xF;
+                if( eva_t->axi_w_strb & 0x4 )
+                    ptr8[1] = (eva_t->axi_w_data0 >> 16) & 0xF;
+                if( eva_t->axi_w_strb & 0x8 )
+                    ptr8[3] = (eva_t->axi_w_data0 >> 24) & 0xF;
+            }
+
+			if(eva_t->axi_w_strb & 0xF0 == 0xF0){
+				ptr32[1] = eva_t->axi_w_data1;
+            }else if(eva_t->axi_w_strb & 0xF0 != 0x0){
+                if( eva_t->axi_w_strb & 0x10 )
+                    ptr8[4+0] = eva_t->axi_w_data1 & 0xF;
+                if( eva_t->axi_w_strb & 0x20 )
+                    ptr8[4+1] = (eva_t->axi_w_data1 >> 8) & 0xF;
+                if( eva_t->axi_w_strb & 0x40 )
+                    ptr8[4+1] = (eva_t->axi_w_data1 >> 16) & 0xF;
+                if( eva_t->axi_w_strb & 0x80 )
+                    ptr8[4+3] = (eva_t->axi_w_data1 >> 24) & 0xF;
+            }
+
+			if(eva_t->axi_w_strb & 0xF00 == 0xF00){
+				ptr32[2] = eva_t->axi_w_data2;
+            }else if(eva_t->axi_w_strb & 0xF00 != 0x0){
+                if( eva_t->axi_w_strb & 0x100 )
+                    ptr8[8+0] = eva_t->axi_w_data2 & 0xF;
+                if( eva_t->axi_w_strb & 0x200 )
+                    ptr8[8+1] = (eva_t->axi_w_data2 >> 8) & 0xF;
+                if( eva_t->axi_w_strb & 0x400 )
+                    ptr8[8+1] = (eva_t->axi_w_data2 >> 16) & 0xF;
+                if( eva_t->axi_w_strb & 0x800 )
+                    ptr8[8+3] = (eva_t->axi_w_data2 >> 24) & 0xF;
+            }
+
+			if(eva_t->axi_w_strb & 0xF000 == 0xF000){
+				ptr32[3] = eva_t->axi_w_data3;
+            }else if(eva_t->axi_w_strb & 0xF000 != 0x0){
+                if( eva_t->axi_w_strb & 0x1000 )
+                    ptr8[12+0] = eva_t->axi_w_data3 & 0xF;
+                if( eva_t->axi_w_strb & 0x2000 )
+                    ptr8[12+1] = (eva_t->axi_w_data3 >> 8) & 0xF;
+                if( eva_t->axi_w_strb & 0x4000 )
+                    ptr8[12+1] = (eva_t->axi_w_data3 >> 16) & 0xF;
+                if( eva_t->axi_w_strb & 0x8000 )
+                    ptr8[12+3] = (eva_t->axi_w_data3 >> 24) & 0xF;
+            }
+
+#ifdef EVA_AXI_ADDR_CHECK
+            }
+#endif
 			barrier();
 			eva_t->axi_w_sync = EVA_SYNC_ACK;
 		}else{

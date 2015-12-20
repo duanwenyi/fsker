@@ -545,3 +545,58 @@ void eva_drv_stop(){
          eva_tc.tc[id].func();
      }
  }
+
+ void* aligned_malloc(size_t size, size_t align)
+ {
+     void* raw_malloc_ptr;		//初始分配的地址
+     void* aligned_ptr;			//最终我们获得的alignment地址
+	
+     if( align & (align - 1) )	//如果alignment不是2的n次方，返回
+         {
+             //errno = EINVAL;
+             return ( (void*)0 );
+         }
+	
+     if( 0 == size )
+         {
+             return ( (void*)0 );
+         } 
+	
+     //将alignment置为至少为2*sizeof(void*),一种优化做法。
+     if( align < 2*sizeof(void*) )
+         {
+             align = 2 * sizeof(void*);
+         }
+	
+     raw_malloc_ptr = malloc(size + align);
+     if( !raw_malloc_ptr )
+         {
+             return ( (void*)0 );
+         }
+	
+     //Align  We have at least sizeof (void *) space below malloc'd ptr. 
+     aligned_ptr = (void*) ( ((size_t)raw_malloc_ptr + align) & ~((size_t)align - 1));
+	
+     ( (void**)aligned_ptr )[-1] = raw_malloc_ptr;
+	
+     return aligned_ptr;
+ }
+
+ void aligned_free(void * aligned_ptr)
+ {
+     if( aligned_ptr )
+         {
+             free( ((void**)aligned_ptr)[-1] );
+         }
+ }
+
+ void* eva_malloc(size_t size, size_t align){
+     void*    aligned_ptr = aligned_malloc( size, align);
+     uint64_t aligned_ptr_base = (uint64_t) aligned_ptr;
+
+     return aligned_ptr;
+ }
+
+ void eva_free(void * aligned_ptr){
+     aligned_free( aligned_ptr );
+ }

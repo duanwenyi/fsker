@@ -48,5 +48,23 @@ int   EVA_TC_GET_ID_BY_NAME(char *name);
 void  EVA_TC_RUN_BY_NAME(char *name);
 void  EVA_TC_RUN_BY_ID(int id);
 
+typedef struct EVA_MEM_MAG_UNIT {
+    uint64_t valid;
+    uint64_t base;  // address high [63:12] , Using 4Kbytes aligned manager
+    uint64_t start;
+    uint64_t end;
+}EVA_MEM_MAG_UNIT_t;
+
+#define EVA_MAX_MAP_NUM 1024
+typedef struct EVA_MEM_MAG {
+    uint64_t           map_nums;
+    EVA_MEM_MAG_UNIT_t map[EVA_MAX_MAP_NUM];
+}EVA_MEM_MAG_t;
+
+void* aligned_malloc(size_t size, size_t align);
+void  aligned_free(void * aligned_ptr);
+
+void* eva_malloc(size_t size, size_t align);
+void  eva_free(void * aligned_ptr);
 
 #endif

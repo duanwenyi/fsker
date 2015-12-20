@@ -17,6 +17,8 @@ int main(int argc, char **argv){
     int cc;
     int ahb_rw_test = 10000;
 
+    int *base = (int *) aligned_malloc( 1024, 16);
+
     eva_drv_init();
   
     eva_intr_register(intr_sample, 0);
@@ -58,6 +60,8 @@ int main(int argc, char **argv){
     eva_delay(1);
 
     sleep(10);
+
+    aligned_free(base);
 
     eva_drv_stop();
 

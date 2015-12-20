@@ -63,6 +63,8 @@ typedef struct EVA_BUS_ST {
     // So 64 bits is better
     uint64_t tick;
     //void *shm;
+
+    uint32_t error;
 }EVA_BUS_ST_t, *EVA_BUS_ST_p;
 
 

@@ -17,7 +17,6 @@ void evaScopeWait(char *path, uint32_t value, uint32_t mode );
 
 void eva_delay(int cycle);
 
-
 typedef struct EVA_INTR_REG {
     uint32_t valid[EVA_MAX_INT_NUM];
     void (*func[EVA_MAX_INT_NUM])(void);
@@ -49,16 +48,16 @@ void  EVA_TC_RUN_BY_NAME(char *name);
 void  EVA_TC_RUN_BY_ID(int id);
 
 typedef struct EVA_MEM_MAG_UNIT {
-    uint64_t valid;
-    uint64_t base;  // address high [63:12] , Using 4Kbytes aligned manager
-    uint64_t start;
+    uint64_t keypair;  // address header
     uint64_t end;
 }EVA_MEM_MAG_UNIT_t;
 
-#define EVA_MAX_MAP_NUM 1024
+#define EVA_MAX_MAP_NUM 256
 typedef struct EVA_MEM_MAG {
-    uint64_t           map_nums;
+    EVA_MEM_MAG_UNIT_t cache_wr;  // for seqence access
+    EVA_MEM_MAG_UNIT_t cache_rd;  // for seqence access
     EVA_MEM_MAG_UNIT_t map[EVA_MAX_MAP_NUM];
+    uint64_t           map_nums;
 }EVA_MEM_MAG_t;
 
 void* aligned_malloc(size_t size, size_t align);
@@ -66,5 +65,12 @@ void  aligned_free(void * aligned_ptr);
 
 void* eva_malloc(size_t size, size_t align);
 void  eva_free(void * aligned_ptr);
+void  eva_mem_init();
+int   eva_mem_seek(uint64_t aligned_ptr, uint64_t size);
+void  eva_mem_register(int index, uint64_t aligned_ptr, uint64_t size);
+
+int   eva_mem_access_check(uint64_t aligned_ptr, uint64_t size, int dir);
+int   eva_mem_access_check_write(uint64_t aligned_ptr, uint64_t size);
+int   eva_mem_access_check_read(uint64_t aligned_ptr, uint64_t size);
 
 #endif

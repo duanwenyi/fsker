@@ -11,9 +11,13 @@ pthread_t eva_monitor;
 //#define EVA_DEBUG
 //#define EVA_AXI_DEBUG
 
+#define EVA_AXI_ADDR_CHECK
+
 EVA_INTR_REG_t intr_reg;
 
-EVA_TC_REG_t eva_tc;
+EVA_TC_REG_t  eva_tc;
+
+EVA_MEM_MAG_t eva_mem_mag;
 
 void eva_cpu_wr(uint32_t addr, uint32_t data){
 #ifdef EVA_SAFE_MODE
@@ -133,6 +137,9 @@ void eva_axi_rd_handler(void){
 	uint32_t *ptr;
 	while(1){
 		if(eva_t->axi_r_sync == EVA_SYNC){
+#ifdef EVA_AXI_ADDR_CHECK
+            eva_t->error = eva_mem_access_check_read(eva_t->axi_r_addr, 16);
+#endif
 			ptr = (uint32_t *)eva_t->axi_r_addr;
 			eva_t->axi_r_data0 = *ptr;
 			ptr++;
@@ -180,6 +187,9 @@ void eva_axi_wr_handler(void){
 					);
 #endif
 			if(eva_t->axi_w_strb == 0xFFFF){
+#ifdef EVA_AXI_ADDR_CHECK
+            eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr, 16);
+#endif
 				uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
 				*ptr = eva_t->axi_w_data0;
 				ptr++;
@@ -188,7 +198,14 @@ void eva_axi_wr_handler(void){
 				*ptr = eva_t->axi_w_data2;
 				ptr++;
 				*ptr = eva_t->axi_w_data3;
-	
+                
+			}else if(eva_t->axi_w_strb == 0xFFF){
+				uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
+				*ptr = eva_t->axi_w_data0;
+				ptr++;
+				*ptr = eva_t->axi_w_data1;
+				ptr++;
+				*ptr = eva_t->axi_w_data2;
 			}else if(eva_t->axi_w_strb == 0xFF){
 				uint32_t * ptr = (uint32_t *)eva_t->axi_w_addr;
 				*ptr = eva_t->axi_w_data0;
@@ -398,6 +415,7 @@ void eva_drv_init(){
 
 	fprintf(stderr, " @EVA SW initial OVER @0x%llu\n",(size_t)eva_t);  
     EVA_TC_INIT();
+    eva_mem_init();
 }
 
 void eva_drv_stop(){
@@ -590,9 +608,116 @@ void eva_drv_stop(){
          }
  }
 
+ void  eva_mem_init(){
+     memset(&eva_mem_mag, 0, sizeof(EVA_MEM_MAG_t));
+ }
+ 
+ int  eva_mem_seek(uint64_t aligned_ptr, uint64_t size){
+     uint64_t cc;
+     int      index = -1;
+     uint64_t new_end = aligned_ptr + size;
+     for(cc=0; cc < eva_mem_mag.map_nums; cc++ ){
+         if( (aligned_ptr >= eva_mem_mag.map[cc].keypair &&
+              aligned_ptr <= eva_mem_mag.map[cc].end) ||
+             (new_end >= eva_mem_mag.map[cc].keypair &&
+              new_end <= eva_mem_mag.map[cc].end) 
+             ){
+             index = cc;
+             break;
+         }
+     }
+          
+     return index;
+ }
+
+ void  eva_mem_register(uint64_t aligned_ptr, uint64_t size){
+     uint64_t new_end = aligned_ptr + size;
+
+     int index = eva_mem_seek(aligned_ptr, size);
+
+     if(index < 0){
+         if(eva_mem_mag.map_nums < EVA_MAX_MAP_NUM){
+             eva_mem_mag.map[eva_mem_mag.map_nums].keypair = aligned_ptr;
+             eva_mem_mag.map[eva_mem_mag.map_nums].end = new_end;
+             eva_mem_mag.map_nums++;
+         }else{
+             fprintf(stderr," Error: eva_malloc exceed EVA_MAX_MAP_NUM %d ! change EVA_MAX_MAP_NUM bigger!\n", EVA_MAX_MAP_NUM );
+         }
+
+     }else{
+         fprintf(stderr," Warn: eva_malloc overlap detected ! %llx+%llx :: %llx+%llx\n", 
+                 aligned_ptr, size, eva_mem_mag.map[index].keypair, eva_mem_mag.map[index].end );
+         if( aligned_ptr > eva_mem_mag.map[index].keypair ){
+             eva_mem_mag.map[index].keypair = aligned_ptr;
+         }
+         
+         if( new_end > eva_mem_mag.map[index].end ){
+             eva_mem_mag.map[index].end = new_end;
+         }
+     }
+ }
+
+ int  eva_mem_access_check(uint64_t aligned_ptr, uint64_t size, int dir){
+     int      index = eva_mem_seek(aligned_ptr, size);
+     uint64_t new_end = aligned_ptr + size;
+     int      error = 0;
+     if(index < 0){
+         fprintf(stderr," Error: eva_mem_access_check : illige address access [0x%llu + %llu]! detected\n", aligned_ptr, size );
+         error = 1;
+     }else{
+         if( (aligned_ptr < eva_mem_mag.map[index].keypair &&
+              new_end     > eva_mem_mag.map[index].end) ){
+             fprintf(stderr," Error: eva_mem_access_check : illige address boundary access [0x%llu + %llu] :: [0x%llu + %llu] ! detected\n", 
+                     aligned_ptr, size, eva_mem_mag.map[index].keypair, eva_mem_mag.map[index].end
+                     );
+             error = 1;
+         }else{
+             if(dir == 1){ // write
+                 eva_mem_mag.cache_wr.keypair = eva_mem_mag.map[index].keypair;
+                 eva_mem_mag.cache_wr.end     = eva_mem_mag.map[index].end;
+             }else{
+                 eva_mem_mag.cache_rd.keypair = eva_mem_mag.map[index].keypair;
+                 eva_mem_mag.cache_rd.end     = eva_mem_mag.map[index].end;
+             }
+         }
+     }
+
+     return error;
+ }
+
+ int  eva_mem_access_check_write(uint64_t aligned_ptr, uint64_t size){
+     int      error = 0;
+     uint64_t new_end = aligned_ptr + size;
+     
+     if( !(aligned_ptr >= eva_mem_mag.cache_wr.keypair &&
+           new_end     <= eva_mem_mag.cache_wr.end) ){
+         if( eva_mem_access_check(aligned_ptr, size, 1) == 1 ){
+             error = 1;
+         }
+     }
+     
+     return error;
+ }
+
+ int  eva_mem_access_check_read(uint64_t aligned_ptr, uint64_t size){
+     int      error = 0;
+     uint64_t new_end = aligned_ptr + size;
+     
+     if( !(aligned_ptr >= eva_mem_mag.cache_rd.keypair &&
+           new_end     <= eva_mem_mag.cache_rd.end) ){
+         if( eva_mem_access_check(aligned_ptr, size, 0) == 1 ){
+             error = 1;
+         }
+     }
+     
+     return error;
+ }
+
  void* eva_malloc(size_t size, size_t align){
      void*    aligned_ptr = aligned_malloc( size, align);
      uint64_t aligned_ptr_base = (uint64_t) aligned_ptr;
+     
+     eva_mem_register(aligned_ptr_base, size );
 
      return aligned_ptr;
  }

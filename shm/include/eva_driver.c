@@ -11,7 +11,8 @@ pthread_t eva_monitor;
 //#define EVA_DEBUG
 //#define EVA_AXI_DEBUG
 
-#define EVA_AXI_ADDR_CHECK
+//#define EVA_AXI_ADDR_CHECK_R
+#define EVA_AXI_ADDR_CHECK_W
 
 EVA_INTR_REG_t intr_reg;
 
@@ -137,7 +138,7 @@ void eva_axi_rd_handler(void){
 	uint32_t *ptr;
 	while(1){
 		if(eva_t->axi_r_sync == EVA_SYNC){
-#ifdef EVA_AXI_ADDR_CHECK
+#ifdef EVA_AXI_ADDR_CHECK_R
             eva_t->error = eva_mem_access_check_read(eva_t->axi_r_addr, 16);
 #endif
 			ptr = (uint32_t *)eva_t->axi_r_addr;
@@ -150,7 +151,7 @@ void eva_axi_rd_handler(void){
 			eva_t->axi_r_data3 = *ptr;
 
 #ifdef EVA_AXI_DEBUG
-	fprintf(stderr," @AXI [R] addr: 0x%llu - data: %8x %8x %8x %8x \n",
+	fprintf(stderr," @AXI [R] addr: 0x%llx - data: %8x %8x %8x %8x \n",
 			eva_t->axi_r_addr,
 			eva_t->axi_r_data0,
 			eva_t->axi_r_data1,
@@ -178,7 +179,7 @@ void eva_axi_wr_handler(void){
 	while(1){
 		if(eva_t->axi_w_sync == EVA_SYNC){
 #ifdef EVA_AXI_DEBUG
-			fprintf(stderr," @AXI [W] addr: 0x%llu  strob: 0x%x - data: 0x%8x 0x%8x 0x%8x 0x%8x \n",
+			fprintf(stderr," @AXI [W] addr: 0x%llx  strob: 0x%x - data: 0x%8x 0x%8x 0x%8x 0x%8x \n",
 					eva_t->axi_w_addr, eva_t->axi_w_strb,
 					eva_t->axi_w_data3,
 					eva_t->axi_w_data2,
@@ -186,14 +187,11 @@ void eva_axi_wr_handler(void){
 					eva_t->axi_w_data0
 					);
 
-            if(eva_t->error){
-                fprintf(stderr," @AXI [R] overflow detected !\n");
-            }
 #endif
             uint32_t * ptr32 = (uint32_t *)eva_t->axi_w_addr;
             uint8_t *  ptr8  = (uint8_t * )eva_t->axi_w_addr;
 
-#ifdef EVA_AXI_ADDR_CHECK
+#ifdef EVA_AXI_ADDR_CHECK_W
             if(eva_t->axi_w_strb == 0xFFFF){
                 eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr, 16);
             }else if(eva_t->axi_w_strb == 0xFF){
@@ -231,57 +229,57 @@ void eva_axi_wr_handler(void){
             }else{
 #endif
 
-			if(eva_t->axi_w_strb & 0xF == 0xF){
-				ptr32[0] = eva_t->axi_w_data0;
-            }else if(eva_t->axi_w_strb & 0xF != 0x0){
-                if( eva_t->axi_w_strb & 0x1 )
-                    ptr8[0] = eva_t->axi_w_data0 & 0xF;
-                if( eva_t->axi_w_strb & 0x2 )
-                    ptr8[1] = (eva_t->axi_w_data0 >> 8) & 0xF;
-                if( eva_t->axi_w_strb & 0x4 )
-                    ptr8[1] = (eva_t->axi_w_data0 >> 16) & 0xF;
-                if( eva_t->axi_w_strb & 0x8 )
-                    ptr8[3] = (eva_t->axi_w_data0 >> 24) & 0xF;
-            }
+                if( (eva_t->axi_w_strb & 0xF) == 0xF){
+                    ptr32[0] = eva_t->axi_w_data0;
+                }else if( (eva_t->axi_w_strb & 0xF) != 0x0){
+                    if( eva_t->axi_w_strb & 0x1 )
+                        ptr8[0] = eva_t->axi_w_data0 & 0xF;
+                    if( eva_t->axi_w_strb & 0x2 )
+                        ptr8[1] = (eva_t->axi_w_data0 >> 8) & 0xF;
+                    if( eva_t->axi_w_strb & 0x4 )
+                        ptr8[1] = (eva_t->axi_w_data0 >> 16) & 0xF;
+                    if( eva_t->axi_w_strb & 0x8 )
+                        ptr8[3] = (eva_t->axi_w_data0 >> 24) & 0xF;
+                }
 
-			if(eva_t->axi_w_strb & 0xF0 == 0xF0){
-				ptr32[1] = eva_t->axi_w_data1;
-            }else if(eva_t->axi_w_strb & 0xF0 != 0x0){
-                if( eva_t->axi_w_strb & 0x10 )
-                    ptr8[4+0] = eva_t->axi_w_data1 & 0xF;
-                if( eva_t->axi_w_strb & 0x20 )
-                    ptr8[4+1] = (eva_t->axi_w_data1 >> 8) & 0xF;
-                if( eva_t->axi_w_strb & 0x40 )
-                    ptr8[4+1] = (eva_t->axi_w_data1 >> 16) & 0xF;
-                if( eva_t->axi_w_strb & 0x80 )
-                    ptr8[4+3] = (eva_t->axi_w_data1 >> 24) & 0xF;
-            }
+                if( (eva_t->axi_w_strb & 0xF0) == 0xF0){
+                    ptr32[1] = eva_t->axi_w_data1;
+                }else if( (eva_t->axi_w_strb & 0xF0) != 0x0){
+                    if( eva_t->axi_w_strb & 0x10 )
+                        ptr8[4+0] = eva_t->axi_w_data1 & 0xF;
+                    if( eva_t->axi_w_strb & 0x20 )
+                        ptr8[4+1] = (eva_t->axi_w_data1 >> 8) & 0xF;
+                    if( eva_t->axi_w_strb & 0x40 )
+                        ptr8[4+1] = (eva_t->axi_w_data1 >> 16) & 0xF;
+                    if( eva_t->axi_w_strb & 0x80 )
+                        ptr8[4+3] = (eva_t->axi_w_data1 >> 24) & 0xF;
+                }
 
-			if(eva_t->axi_w_strb & 0xF00 == 0xF00){
-				ptr32[2] = eva_t->axi_w_data2;
-            }else if(eva_t->axi_w_strb & 0xF00 != 0x0){
-                if( eva_t->axi_w_strb & 0x100 )
-                    ptr8[8+0] = eva_t->axi_w_data2 & 0xF;
-                if( eva_t->axi_w_strb & 0x200 )
-                    ptr8[8+1] = (eva_t->axi_w_data2 >> 8) & 0xF;
-                if( eva_t->axi_w_strb & 0x400 )
-                    ptr8[8+1] = (eva_t->axi_w_data2 >> 16) & 0xF;
-                if( eva_t->axi_w_strb & 0x800 )
-                    ptr8[8+3] = (eva_t->axi_w_data2 >> 24) & 0xF;
-            }
+                if( (eva_t->axi_w_strb & 0xF00) == 0xF00){
+                    ptr32[2] = eva_t->axi_w_data2;
+                }else if( (eva_t->axi_w_strb & 0xF00) != 0x0){
+                    if( eva_t->axi_w_strb & 0x100 )
+                        ptr8[8+0] = eva_t->axi_w_data2 & 0xF;
+                    if( eva_t->axi_w_strb & 0x200 )
+                        ptr8[8+1] = (eva_t->axi_w_data2 >> 8) & 0xF;
+                    if( eva_t->axi_w_strb & 0x400 )
+                        ptr8[8+1] = (eva_t->axi_w_data2 >> 16) & 0xF;
+                    if( eva_t->axi_w_strb & 0x800 )
+                        ptr8[8+3] = (eva_t->axi_w_data2 >> 24) & 0xF;
+                }
 
-			if(eva_t->axi_w_strb & 0xF000 == 0xF000){
-				ptr32[3] = eva_t->axi_w_data3;
-            }else if(eva_t->axi_w_strb & 0xF000 != 0x0){
-                if( eva_t->axi_w_strb & 0x1000 )
-                    ptr8[12+0] = eva_t->axi_w_data3 & 0xF;
-                if( eva_t->axi_w_strb & 0x2000 )
-                    ptr8[12+1] = (eva_t->axi_w_data3 >> 8) & 0xF;
-                if( eva_t->axi_w_strb & 0x4000 )
-                    ptr8[12+1] = (eva_t->axi_w_data3 >> 16) & 0xF;
-                if( eva_t->axi_w_strb & 0x8000 )
-                    ptr8[12+3] = (eva_t->axi_w_data3 >> 24) & 0xF;
-            }
+                if( (eva_t->axi_w_strb & 0xF000) == 0xF000){
+                    ptr32[3] = eva_t->axi_w_data3;
+                }else if( (eva_t->axi_w_strb & 0xF000) != 0x0){
+                    if( eva_t->axi_w_strb & 0x1000 )
+                        ptr8[12+0] = eva_t->axi_w_data3 & 0xF;
+                    if( eva_t->axi_w_strb & 0x2000 )
+                        ptr8[12+1] = (eva_t->axi_w_data3 >> 8) & 0xF;
+                    if( eva_t->axi_w_strb & 0x4000 )
+                        ptr8[12+1] = (eva_t->axi_w_data3 >> 16) & 0xF;
+                    if( eva_t->axi_w_strb & 0x8000 )
+                        ptr8[12+3] = (eva_t->axi_w_data3 >> 24) & 0xF;
+                }
 
 #ifdef EVA_AXI_ADDR_CHECK
             }
@@ -334,7 +332,7 @@ void eva_interrupt_handler(void){
 			 intr_reg.func[intr_id]  = user_func;
 			 intr_reg.valid[intr_id] = 1;
 			 intr_reg.valid_bits |= (1<< intr_id);
-			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%llu] is register OK. [0x%x]\n", intr_id, (uint64_t)user_func, intr_reg.valid_bits); 
+			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%llx] is register OK. [0x%x]\n", intr_id, (uint64_t)user_func, intr_reg.valid_bits); 
 		 }else{
 			 fprintf(stderr, " @EVA intrrupt register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
 		 }
@@ -358,6 +356,7 @@ void eva_interrupt_handler(void){
 void eva_drv_init(){
 	int ret;
 	memset(&intr_reg, 0, sizeof(EVA_INTR_REG_t));
+    eva_mem_init();
 
 	eva_t = (EVA_BUS_ST_t *)eva_map(0);
 	if( eva_t->control != EVA_BUS_INIT){
@@ -432,9 +431,8 @@ void eva_drv_init(){
 	}
 #endif
 
-	fprintf(stderr, " @EVA SW initial OVER @0x%llu\n",(size_t)eva_t);  
+	fprintf(stderr, " @EVA SW initial OVER @0x%llx\n",(size_t)eva_t);  
     EVA_TC_INIT();
-    eva_mem_init();
 }
 
 void eva_drv_stop(){
@@ -493,9 +491,9 @@ void eva_drv_stop(){
 	 }
 
 	 if(mode == 1){
-		 fprintf(stderr,"OK @wait %s == 0x%x : after %dus @HDL : %llu CYCLE\n", path, value, tim, eva_t->tick);
+		 fprintf(stderr,"OK @wait %s == 0x%x : after %dus @HDL : %llx CYCLE\n", path, value, tim, eva_t->tick);
 	 }else{
-		 fprintf(stderr,"OK @wait %s != 0x%x : after %dus @HDL : %llu CYCLE\n", path, value, tim, eva_t->tick);
+		 fprintf(stderr,"OK @wait %s != 0x%x : after %dus @HDL : %llx CYCLE\n", path, value, tim, eva_t->tick);
 	 }
  }
 
@@ -510,7 +508,7 @@ void eva_drv_stop(){
 			 usleep(1);
 	 }while( grap < cycle);
   
-	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%llu -> %llu]\n", cycle, mark, mark2 );
+	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%llx -> %llx]\n", cycle, mark, mark2 );
  }
 
 
@@ -629,10 +627,11 @@ void eva_drv_stop(){
 
  void  eva_mem_init(){
      memset(&eva_mem_mag, 0, sizeof(EVA_MEM_MAG_t));
+     fprintf(stderr," EVA Memory Map List Initialed!\n"); 
  }
  
  int  eva_mem_seek(uint64_t aligned_ptr, uint64_t size){
-     uint64_t cc;
+     int      cc;
      int      index = -1;
      uint64_t new_end = aligned_ptr + size;
      for(cc=0; cc < eva_mem_mag.map_nums; cc++ ){
@@ -664,8 +663,8 @@ void eva_drv_stop(){
          }
 
      }else{
-         fprintf(stderr," Warn: eva_malloc overlap detected ! %llx+%llx :: %llx+%llx\n", 
-                 aligned_ptr, size, eva_mem_mag.map[index].keypair, eva_mem_mag.map[index].end );
+         fprintf(stderr," Warn: eva_malloc overlap detected ! %llx+%llx :: %llx+%llx @item %d\n", 
+                 aligned_ptr, size, eva_mem_mag.map[index].keypair, eva_mem_mag.map[index].end, index );
          if( aligned_ptr > eva_mem_mag.map[index].keypair ){
              eva_mem_mag.map[index].keypair = aligned_ptr;
          }
@@ -673,6 +672,8 @@ void eva_drv_stop(){
          if( new_end > eva_mem_mag.map[index].end ){
              eva_mem_mag.map[index].end = new_end;
          }
+
+         
      }
  }
 
@@ -681,13 +682,13 @@ void eva_drv_stop(){
      uint64_t new_end = aligned_ptr + size;
      int      error = 0;
      if(index < 0){
-         fprintf(stderr," Error: eva_mem_access_check : illige address access [0x%llu + %llu]! detected\n", aligned_ptr, size );
+         fprintf(stderr," Error: eva_mem_access_check [%s]: illige address access [0x%llx + %llx]! \n", dir ? "W" : "R", aligned_ptr, size );
          error = 1;
      }else{
          if( (aligned_ptr < eva_mem_mag.map[index].keypair &&
               new_end     > eva_mem_mag.map[index].end) ){
-             fprintf(stderr," Error: eva_mem_access_check : illige address boundary access [0x%llu + %llu] :: [0x%llu + %llu] ! detected\n", 
-                     aligned_ptr, size, eva_mem_mag.map[index].keypair, eva_mem_mag.map[index].end
+             fprintf(stderr," Error: eva_mem_access_check [%s]: illige address boundary access [0x%llx + %llx] :: [0x%llx + %llx] !\n", 
+                     dir ? "W" : "R", aligned_ptr, size, eva_mem_mag.map[index].keypair, eva_mem_mag.map[index].end
                      );
              error = 1;
          }else{
@@ -732,6 +733,18 @@ void eva_drv_stop(){
      return error;
  }
 
+ void  eva_mem_list_show(){
+     int cc;
+     fprintf(stderr," *** EVA MEMORY MAP LIST ***\n");
+     for(cc=0; cc < eva_mem_mag.map_nums; cc++ ){
+         fprintf(stderr," %3d): [0x%llx -> 0x%llx] :: %llu bytes\n", 
+                 cc, eva_mem_mag.map[cc].keypair, eva_mem_mag.map[cc].end,
+                 eva_mem_mag.map[cc].end - eva_mem_mag.map[cc].keypair
+                 );
+     }
+     fprintf(stderr,"\n");
+ }
+
  void* eva_malloc(size_t size, size_t align){
      void*    aligned_ptr = aligned_malloc( size, align);
      uint64_t aligned_ptr_base = (uint64_t) aligned_ptr;
@@ -739,6 +752,10 @@ void eva_drv_stop(){
      eva_mem_register(aligned_ptr_base, size );
 
      return aligned_ptr;
+ }
+
+ void  eva_mem_map(uint64_t aligned_ptr, uint64_t size){
+     eva_mem_register(aligned_ptr, size );
  }
 
  void eva_free(void * aligned_ptr){

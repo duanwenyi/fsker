@@ -57,12 +57,14 @@ typedef struct EVA_MEM_MAG {
     EVA_MEM_MAG_UNIT_t cache_wr;  // for seqence access
     EVA_MEM_MAG_UNIT_t cache_rd;  // for seqence access
     EVA_MEM_MAG_UNIT_t map[EVA_MAX_MAP_NUM];
-    uint64_t           map_nums;
+    int                map_nums;
 }EVA_MEM_MAG_t;
 
 void* aligned_malloc(size_t size, size_t align);
 void  aligned_free(void * aligned_ptr);
 
+void  eva_mem_list_show();
+void  eva_mem_map(uint64_t aligned_ptr, uint64_t size);
 void* eva_malloc(size_t size, size_t align);
 void  eva_free(void * aligned_ptr);
 void  eva_mem_init();

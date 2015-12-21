@@ -20,7 +20,6 @@ int main(int argc, char **argv){
     //if(freopen("eva_run.log", "w", stderr) == NULL)
     //    fprintf(stderr,"error redirecting stdout\n");
 
-    int *base = (int *) aligned_malloc( 1024, 16);
 
     eva_drv_init();
   
@@ -32,6 +31,13 @@ int main(int argc, char **argv){
 
     EVA_TC_RUN_BY_NAME("testcase_0");
     EVA_TC_RUN_BY_NAME("testcase_1");
+
+    int *base = (int *) eva_malloc( 1024, 16);
+    int *base2 = (int *) eva_malloc( 2480, 16);
+    
+    eva_mem_map((uint64_t)base2, 2048);
+
+    eva_mem_list_show();
 
     eva_cpu_wr(0x4,1);
 
@@ -64,7 +70,7 @@ int main(int argc, char **argv){
 
     sleep(10);
 
-    aligned_free(base);
+    eva_free(base);
 
     eva_drv_stop();
 

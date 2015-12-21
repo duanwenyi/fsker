@@ -281,7 +281,7 @@ void eva_axi_wr_handler(void){
                         ptr8[12+3] = (eva_t->axi_w_data3 >> 24) & 0xF;
                 }
 
-#ifdef EVA_AXI_ADDR_CHECK
+#ifdef EVA_AXI_ADDR_CHECK_W
             }
 #endif
 			barrier();

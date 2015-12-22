@@ -9,7 +9,7 @@ pthread_t eva_monitor;
 
 #define EVA_SAFE_MODE
 //#define EVA_DEBUG
-//#define EVA_AXI_DEBUG
+#define EVA_AXI_DEBUG
 
 //#define EVA_AXI_ADDR_CHECK_R
 #define EVA_AXI_ADDR_CHECK_W
@@ -121,8 +121,8 @@ void eva_monitor_handler(void){
             die_cnt = 0;
         }
 
-        fprintf(stderr, " @EVA Monitor: %llu S %c HDL: 0x%llu CYCLE  --> %llu (CYCLE/S) [MAX/MIN][%llu / %llu] CYCLE/S\r",
-                local_time, rota[local_time%4], eva_t->tick, eva_rate, max_rate,  min_rate);  
+        fprintf(stderr, " @EVA Monitor: %llu S (%c) HDL: %llu (CYCLE/S) [MAX/MIN][%llu / %llu] CYCLE/S\r",
+                local_time, rota[local_time%4], eva_rate, max_rate,  min_rate);  
 
         initial = 0;
     }
@@ -151,7 +151,7 @@ void eva_axi_rd_handler(void){
 			eva_t->axi_r_data3 = *ptr;
 
 #ifdef EVA_AXI_DEBUG
-	fprintf(stderr," @AXI [R] addr: 0x%llx - data: %8x %8x %8x %8x \n",
+	fprintf(stderr," @AXI [R] addr: 0x%16llx - data: %08x %08x %08x %08x \n",
 			eva_t->axi_r_addr,
 			eva_t->axi_r_data0,
 			eva_t->axi_r_data1,
@@ -179,7 +179,7 @@ void eva_axi_wr_handler(void){
 	while(1){
 		if(eva_t->axi_w_sync == EVA_SYNC){
 #ifdef EVA_AXI_DEBUG
-			fprintf(stderr," @AXI [W] addr: 0x%llx  strob: 0x%x - data: 0x%8x 0x%8x 0x%8x 0x%8x \n",
+			fprintf(stderr," @AXI [W] addr: 0x%16llx - data: %08x %08x %08x %08x - strob: 0x%x\n",
 					eva_t->axi_w_addr, eva_t->axi_w_strb,
 					eva_t->axi_w_data3,
 					eva_t->axi_w_data2,

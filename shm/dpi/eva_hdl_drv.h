@@ -111,7 +111,9 @@ extern "C" {
 #endif
 
     void eva_hdl_init();
-    void eva_hdl_stop( svBit *stop );
+    void eva_hdl_stop( svBit *stop,
+                       svBit *error
+                       );
     void eva_hdl_pause();
 
     void eva_ahb_bus_func_i( const svBit        hready,

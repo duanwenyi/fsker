@@ -61,7 +61,9 @@ void eva_hdl_init(){
  
 }
 
-void eva_hdl_stop( svBit *stop ){
+void eva_hdl_stop( svBit *stop,
+                   svBit *error
+                   ){
 
     if( eva_bus_t.eva_t->control == EVA_BUS_STOP){
         fprintf(stderr, " @EVA DEMO set STOP detected , ready out ...\n");  
@@ -74,6 +76,8 @@ void eva_hdl_stop( svBit *stop ){
         *stop = 0;
     }
 
+    *error  = eva_bus_t.eva_t->error;
+    eva_bus_t.eva_t->error = 0; //clear it to generate one cycle signal
 }
 
 void eva_hdl_pause(){

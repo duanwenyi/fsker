@@ -16,9 +16,9 @@
 
 // AXI Port Cell
 typedef struct AXI_PCELL{
+    uint64_t addr_base;
+    uint64_t cur_addr;
     uint32_t valid;
-    uint32_t addr_base;
-    uint32_t cur_addr;
   
     uint32_t length;
     uint32_t remain_len;    // remain length of a burst

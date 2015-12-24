@@ -151,12 +151,12 @@ void eva_axi_rd_handler(void){
 			eva_t->axi_r_data3 = *ptr;
 
 #ifdef EVA_AXI_DEBUG
-	fprintf(stderr," @AXI [R] addr: 0x%16llx - data: %08x %08x %08x %08x \n",
+	fprintf(stderr," @AXI [R] Addr[ 0x%16llx ] - data[ %08x %08x %08x %08x ] \n",
 			eva_t->axi_r_addr,
-			eva_t->axi_r_data0,
-			eva_t->axi_r_data1,
+			eva_t->axi_r_data3,
 			eva_t->axi_r_data2,
-			eva_t->axi_r_data3
+			eva_t->axi_r_data1,
+			eva_t->axi_r_data0
 			);
 #endif
 			barrier();
@@ -179,12 +179,12 @@ void eva_axi_wr_handler(void){
 	while(1){
 		if(eva_t->axi_w_sync == EVA_SYNC){
 #ifdef EVA_AXI_DEBUG
-			fprintf(stderr," @AXI [W] addr: 0x%16llx - data: %08x %08x %08x %08x - strob: 0x%x\n",
-					eva_t->axi_w_addr, eva_t->axi_w_strb,
+            fprintf(stderr," @AXI [W] Addr[ 0x%16llx ] - data[ %08x %08x %08x %08x ] - strob: 0x%x \n",
+					eva_t->axi_w_addr, 
 					eva_t->axi_w_data3,
 					eva_t->axi_w_data2,
 					eva_t->axi_w_data1,
-					eva_t->axi_w_data0
+					eva_t->axi_w_data0, eva_t->axi_w_strb
 					);
 
 #endif

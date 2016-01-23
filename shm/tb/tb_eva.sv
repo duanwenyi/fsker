@@ -114,8 +114,6 @@ module TB_EVA(/*AUTOARG*/
 												    output bit [ 5:0] bid
 												    );
 
-    import "DPI-C" function void evaScopeGetHandle();
-    
     input                  hclk;
     input                  hrest_n;
 
@@ -135,9 +133,7 @@ module TB_EVA(/*AUTOARG*/
     input bit [1:0]        hresp; 
     input bit [31:0]       hrdata;
     
-    
-    
-    
+    // AXI Read  Part
     output bit             arready;                     
     input bit              arvalid;                     
     input bit [5:0]        arid;        // [3:0]        
@@ -160,7 +156,7 @@ module TB_EVA(/*AUTOARG*/
     output bit             rlast;                       
     output bit [1:0]       rresp;   // [1:0] 
 
-
+    // AXI Write Part
     output bit             awready;                     
     input bit              awvalid;                      
     input bit [5:0]        awid;        // [3:0]         
@@ -297,6 +293,8 @@ module TB_EVA(/*AUTOARG*/
         @(posedge hrest_n );
         wait(arest_n == 1'b1);
 
+        @(posedge aclk );
+      
         active = 1'b1;
         eva_hdl_init();
     end
@@ -316,11 +314,6 @@ module TB_EVA(/*AUTOARG*/
 		      #50ns;
 		      $finish();
 		  end
-      end
-
-    always @(posedge aclk)
-      if(active) begin
-		  evaScopeGetHandle();
       end
     
 endmodule // TB_EVA

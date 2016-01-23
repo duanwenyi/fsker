@@ -8,7 +8,6 @@ pthread_t eva_intr;
 pthread_t eva_monitor;
 
 #define EVA_SAFE_MODE
-//#define EVA_DEBUG
 #define EVA_AXI_DEBUG
 
 //#define EVA_AXI_ADDR_CHECK_R
@@ -31,15 +30,10 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
 	eva_t->ahb_data  = data;
 	barrier();
 	eva_t->ahb_sync  = EVA_SYNC;
-#ifdef EVA_DEBUG
-	fprintf(stderr," @AHB write addr: 0x%8x  data: 0x%8x\n",eva_t->ahb_addr, eva_t->ahb_data );
-#endif
+
 	while(eva_t->ahb_sync == EVA_SYNC){
 		EVA_UNIT_DELAY;
 	}
-#ifdef EVA_DEBUG
-	fprintf(stderr," @AHB write addr: 0x%8x  data: 0x%8x OK\n",eva_t->ahb_addr, eva_t->ahb_data );
-#endif
 }
 
 
@@ -54,16 +48,9 @@ uint32_t eva_cpu_rd(uint32_t addr){
 	barrier();
 	eva_t->ahb_sync  = EVA_SYNC;
 
-#ifdef EVA_DEBUG
-	fprintf(stderr," @AHB read addr: 0x%8x \n",eva_t->ahb_addr );
-#endif
-
 	while(eva_t->ahb_sync == EVA_SYNC){
 		EVA_UNIT_DELAY;
 	}
-#ifdef EVA_DEBUG
-	fprintf(stderr," @AHB read addr: 0x%8x  data: 0x%8x OK\n",eva_t->ahb_addr, eva_t->ahb_data );
-#endif
   
 	return eva_t->ahb_data;
 }

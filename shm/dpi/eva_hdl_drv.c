@@ -78,6 +78,8 @@ void eva_hdl_alive( svBit *stop,
         *error = 1;
         eva_bus_t.eva_t->control  = EVA_BUS_INIT;
     }
+    
+    evaScopeGetHandle();
 }
 
 void eva_ahb_bus_func_i( const svBit        hready,

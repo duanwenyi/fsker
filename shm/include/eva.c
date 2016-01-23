@@ -1,3 +1,4 @@
+#include <string.h>
 #include "eva.h"
 
 void *eva_map(int do_init){
@@ -18,13 +19,13 @@ void *eva_map(int do_init){
             fprintf(stderr, "shmat failed\n");  
             exit(EXIT_FAILURE);  
         }  
-    fprintf(stderr, " @EVA initialed @key %x\n",key);  
+    fprintf(stderr, " @EVA -> @key 0x%x\n",key);  
 
     if(do_init){
         bus = (EVA_BUS_ST_t *)shm;
 
-        bus->resv       = 0;
-        bus->intr       = 0;
+        memset(bus, 0, sizeof(EVA_BUS_ST_t));
+
         bus->ahb_sync   = EVA_SYNC_ACK;
         bus->axi_w_sync = EVA_SYNC_ACK;
         bus->axi_r_sync = EVA_SYNC_ACK;

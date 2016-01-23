@@ -23,7 +23,7 @@ EVA_MEM_MAG_t eva_mem_mag;
 void eva_cpu_wr(uint32_t addr, uint32_t data){
 #ifdef EVA_SAFE_MODE
 	while(eva_t->ahb_sync != EVA_SYNC_ACK){
-		usleep(1);
+		EVA_UNIT_DELAY;
 	}
 #endif
 	eva_t->ahb_write = 1;
@@ -35,7 +35,7 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
 	fprintf(stderr," @AHB write addr: 0x%8x  data: 0x%8x\n",eva_t->ahb_addr, eva_t->ahb_data );
 #endif
 	while(eva_t->ahb_sync == EVA_SYNC){
-		usleep(1);
+		EVA_UNIT_DELAY;
 	}
 #ifdef EVA_DEBUG
 	fprintf(stderr," @AHB write addr: 0x%8x  data: 0x%8x OK\n",eva_t->ahb_addr, eva_t->ahb_data );
@@ -46,7 +46,7 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
 uint32_t eva_cpu_rd(uint32_t addr){
 #ifdef EVA_SAFE_MODE
 	while(eva_t->ahb_sync != EVA_SYNC_ACK){
-		usleep(1);
+		EVA_UNIT_DELAY;
 	}
 #endif
 	eva_t->ahb_write = 0;
@@ -59,7 +59,7 @@ uint32_t eva_cpu_rd(uint32_t addr){
 #endif
 
 	while(eva_t->ahb_sync == EVA_SYNC){
-		usleep(1);
+		EVA_UNIT_DELAY;
 	}
 #ifdef EVA_DEBUG
 	fprintf(stderr," @AHB read addr: 0x%8x  data: 0x%8x OK\n",eva_t->ahb_addr, eva_t->ahb_data );
@@ -139,7 +139,8 @@ void eva_axi_rd_handler(void){
 	while(1){
 		if(eva_t->axi_r_sync == EVA_SYNC){
 #ifdef EVA_AXI_ADDR_CHECK_R
-            eva_t->error = eva_mem_access_check_read(eva_t->axi_r_addr, 16);
+            if( eva_mem_access_check_read(eva_t->axi_r_addr, 16) )
+                eva_t->control = EVA_BUS_ERROR;
 #endif
 			ptr = (uint32_t *)eva_t->axi_r_addr;
 			eva_t->axi_r_data0 = *ptr;
@@ -151,7 +152,7 @@ void eva_axi_rd_handler(void){
 			eva_t->axi_r_data3 = *ptr;
 
 #ifdef EVA_AXI_DEBUG
-	fprintf(stderr," @AXI [R] Addr[ 0x%16llx ] - data[ %08x %08x %08x %08x ] \n",
+	fprintf(stderr," @AXI [R] [ 0x%16llx - %08x %08x %08x %08x ] \n",
 			eva_t->axi_r_addr,
 			eva_t->axi_r_data3,
 			eva_t->axi_r_data2,
@@ -162,7 +163,7 @@ void eva_axi_rd_handler(void){
 			barrier();
 			eva_t->axi_r_sync = EVA_SYNC_ACK;
 		}else{
-			usleep(1);
+			EVA_UNIT_DELAY;
 		}
 	}
 
@@ -176,10 +177,12 @@ void *eva_axi_wr_handler(void *){
 #else
 void eva_axi_wr_handler(void){
 #endif  
+    int error;
 	while(1){
+        error = 0;
 		if(eva_t->axi_w_sync == EVA_SYNC){
 #ifdef EVA_AXI_DEBUG
-            fprintf(stderr," @AXI [W] Addr[ 0x%16llx ] - data[ %08x %08x %08x %08x ] - strob: 0x%x \n",
+            fprintf(stderr," @AXI [W] [ 0x%16llx - %08x %08x %08x %08x ] - strob: 0x%x \n",
 					eva_t->axi_w_addr, 
 					eva_t->axi_w_data3,
 					eva_t->axi_w_data2,
@@ -193,9 +196,10 @@ void eva_axi_wr_handler(void){
 
 #ifdef EVA_AXI_ADDR_CHECK_W
             if(eva_t->axi_w_strb == 0xFFFF){
-                eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr, 16);
+                error =  eva_mem_access_check_write(eva_t->axi_w_addr, 16);
+
             }else if(eva_t->axi_w_strb == 0xFF){
-                eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr, 8);
+                error = eva_mem_access_check_write(eva_t->axi_w_addr, 8);
             }else{
                 uint32_t header_ofst = 0;
                 uint32_t bits_sum    = 16;
@@ -221,11 +225,12 @@ void eva_axi_wr_handler(void){
                 }
                 
                 if(bits_sum > 0)
-                    eva_t->error = eva_mem_access_check_write(eva_t->axi_w_addr + header_ofst, bits_sum);
+                    error = eva_mem_access_check_write(eva_t->axi_w_addr + header_ofst, bits_sum);
             }
 
-            if(eva_t->error){
+            if(error){
                 fprintf(stderr," @AXI [W] overflow detected !\n");
+                eva_t->control = EVA_BUS_ERROR;
             }else{
 #endif
 
@@ -287,7 +292,7 @@ void eva_axi_wr_handler(void){
 			barrier();
 			eva_t->axi_w_sync = EVA_SYNC_ACK;
 		}else{
-			usleep(1);
+			EVA_UNIT_DELAY;
 		}
 	}
 
@@ -317,7 +322,7 @@ void eva_interrupt_handler(void){
 				}
 			}
 		}else{
-			usleep(1);
+			EVA_UNIT_DELAY;
 		}
 	}
   
@@ -362,7 +367,7 @@ void eva_drv_init(){
 	if( eva_t->control != EVA_BUS_INIT){
 		fprintf(stderr, " @EVA HDL is not detected start first , waiting ....\n");  
 		while(eva_t->control != EVA_BUS_INIT ){
-			usleep(1);
+			EVA_UNIT_DELAY;
 		}
 		//exit(EXIT_FAILURE);  
 	}
@@ -370,7 +375,7 @@ void eva_drv_init(){
 	eva_t->control = EVA_BUS_ACK;
 
 	while(eva_t->control == EVA_BUS_ACK ){
-		usleep(1);
+		EVA_UNIT_DELAY;
 	}
   
 	if( eva_t->control != EVA_BUS_ALIVE){
@@ -446,7 +451,7 @@ void eva_drv_stop(){
   fprintf(stderr, " @EVA SW STOP ...\n");  
 
   while(eva_t->control == EVA_BUS_STOP ){
-    usleep(1);
+    EVA_UNIT_DELAY;
   }
 
   fprintf(stderr, " @EVA HDL STOP ACKED ...\n");  
@@ -463,37 +468,64 @@ void eva_drv_stop(){
 	 eva_t->control = EVA_BUS_PAUSE;
 
 	 while(eva_t->control == EVA_BUS_PAUSE ){
-		 usleep(1);
+		 EVA_UNIT_DELAY;
 	 }
 
  }
 
- void evaScopeWait(char *path, uint32_t value, uint32_t mode ){
+ uint32_t evaGetPro(char *path){
+     uint32_t val = 0;
+	 while( eva_t->get != EVA_GET_SYNC_IDLE ){
+		 EVA_UNIT_DELAY;
+	 }
+
+     strcpy(eva_t->str, path );
+     barrier();
+     eva_t->get = EVA_GET_SYNC_REQ;
+     
+	 while( eva_t->get == EVA_GET_SYNC_REQ ){
+         EVA_UNIT_DELAY;
+	 }
+
+     val =  eva_t->getValue;
+     barrier();
+     eva_t->get = EVA_GET_SYNC_IDLE;
+     
+     return val;
+ }
+
+ uint32_t evaGet(char *path){
+     uint32_t val = evaGetPro(path);
+     fprintf(stderr," +evaGet  %s = 0x%x\n", path, val);
+     return val;
+ }
+
+ void evaWait(char *path, uint32_t value, uint32_t mode ){
 	 /*
 	   path like "top.module.wire"
 	   value
 	   mode : 1: be equal to out  0: be not equal to out
 	 */
-	 FILE *fp = fopen("./evaScopeGet.txt","w");
-	 int   tim = 0;
-	 if(fp == NULL){
-		 fprintf(stderr, "@evaScopeWait: Open file ./evaScopeGet.txt FAILED !\n");
-		 return ;
-	 }
-	 fprintf(fp,"%s 0x%x %d\n", path, value, mode);
-	 fclose(fp);
+     int tim = 0;
 
-	 eva_t->resv = eva_t->resv | EVA_WAIT_SYNC_MSK;
-  
-	 while( ((eva_t->resv & EVA_WAIT_SYNC_MSK) == EVA_WAIT_SYNC_MSK)){
-		 usleep(1);
-		 tim++;
-	 }
+     uint32_t val = 0;
+
+     while(1){
+         val = evaGetPro(path);
+         if( ((mode == 1) && (val == value)) ||
+             ((mode == 0) && (val != value)) 
+             ){
+             break;
+         }
+         EVA_UNIT_DELAY;
+         tim++;
+
+     }
 
 	 if(mode == 1){
-		 fprintf(stderr,"OK @wait %s == 0x%x : after %dus @HDL : %llx CYCLE\n", path, value, tim, eva_t->tick);
+		 fprintf(stderr," +evaWait %s == 0x%x : after %dus @HDL : %llx CYCLE \n", path, value, tim, eva_t->tick);
 	 }else{
-		 fprintf(stderr,"OK @wait %s != 0x%x : after %dus @HDL : %llx CYCLE\n", path, value, tim, eva_t->tick);
+		 fprintf(stderr," +evaWait %s != 0x%x : after %dus @HDL : %llx CYCLE\n", path, value, tim, eva_t->tick);
 	 }
  }
 
@@ -505,7 +537,7 @@ void eva_drv_stop(){
 		 mark2 = eva_t->tick;
 		 grap = mark2 - mark;
 		 if(cycle > 20)
-			 usleep(1);
+			 EVA_UNIT_DELAY;
 	 }while( grap < cycle);
   
 	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%llx -> %llx]\n", cycle, mark, mark2 );

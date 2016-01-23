@@ -18,7 +18,7 @@ LINK        = g++
 LFLAGS      = $(DEFINES) -lpthread
 LIBS        = 
 
-BIN         = eva_demo
+BIN         = app_demo
 
 %.o: %.c
 	$(CXX) $(CFLAGS) $(INCPATH) -c $< -o $@

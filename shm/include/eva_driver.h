@@ -13,7 +13,9 @@ void eva_cpu_wr(uint32_t addr, uint32_t data);
 uint32_t eva_cpu_rd(uint32_t addr);
 
 void eva_intr_register(void (*user_func)(), int intr_id);
-void evaScopeWait(char *path, uint32_t value, uint32_t mode );
+
+uint32_t evaGet(char *path);
+void     evaWait(char *path, uint32_t value, uint32_t mode );
 
 void eva_delay(int cycle);
 

@@ -16,6 +16,7 @@
 #define EVA_BUS_ALIVE  0xCC
 #define EVA_BUS_PAUSE  0xC0
 #define EVA_BUS_STOP   0x00
+#define EVA_BUS_ERROR  0xFE
 
 #define EVA_SYNC       0x5c5c5c5c
 #define EVA_SYNC_ACK   0xc5c5c5c5
@@ -32,13 +33,13 @@
 
 */
 
-#define EVA_WAIT_SYNC_MSK 0x1
+#define EVA_GET_SYNC_IDLE 0x0
+#define EVA_GET_SYNC_REQ  0x5c
+#define EVA_GET_SYNC_ACK  0xc5
+
+#define EVA_UNIT_DELAY usleep(1)
 
 typedef struct EVA_BUS_ST {
-    uint32_t control;  // 
-    uint32_t resv;     // reserved  [0]: 1:wait sync
-    uint32_t intr;     // Interrupt , every bit for one register interrupt .
-
     uint32_t ahb_sync;
     uint32_t ahb_write;
     uint32_t ahb_addr;
@@ -58,20 +59,23 @@ typedef struct EVA_BUS_ST {
     uint32_t axi_r_data1;
     uint32_t axi_r_data2;
     uint32_t axi_r_data3;
-  
+
     // One 32 bits counter be full to 0xFFFF_FFFF only need about ~ 3 hour
     // So 64 bits is better
     uint64_t tick;
-    //void *shm;
 
-    uint32_t error;
+    uint32_t intr;     // Interrupt , every bit for one register interrupt .
+    uint8_t  control;   // alive control
+    uint8_t  get;       // get signal  sync : from app 
+
+    uint32_t getValue;
+    char     str[256]; // re-used by wait & get syn process
 }EVA_BUS_ST_t, *EVA_BUS_ST_p;
 
-
 void *eva_map(int do_init);
-void eva_unmap();
+void  eva_unmap();
 
-void eva_destory();
+void  eva_destory();
 
 /* Optimization barrier */  
 #define barrier() __asm__ __volatile__("": : :"memory")  

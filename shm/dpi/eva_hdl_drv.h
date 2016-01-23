@@ -10,7 +10,6 @@
 
 #define EVA_AXI_MAX_OUTSTANDING 16
 #define EVA_AXI_MAX_PORT 64
-#define EVA_SCOPE_CMP_MODE_EQUAL 1
 
 #define GEN_DMA_ADDR64(high, low) ( ( (uint64_t)(high) <<32 ) | (low))
 
@@ -97,12 +96,6 @@ typedef struct EVA_HDL{
     uint32_t wdata_3;
     uint32_t wstrb;               // [15:0]
 
-    uint32_t waitMarkEnable;               // [15:0]
-    char     scopePath[256];
-    uint32_t scopeValue;
-    uint32_t scopeMode;  // 1: be equal to handshake  0: be not equal to over
-    FILE    *fp;
-
     uint32_t sys_sigint;
 }EVA_HDL_t, *EVA_HDL_p;
 
@@ -111,10 +104,9 @@ extern "C" {
 #endif
 
     void eva_hdl_init();
-    void eva_hdl_stop( svBit *stop,
-                       svBit *error
-                       );
-    void eva_hdl_pause();
+    void eva_hdl_alive( svBit *stop,
+                        svBit *error
+                        );
 
     void eva_ahb_bus_func_i( const svBit        hready,
                              const svBitVecVal *hresp,

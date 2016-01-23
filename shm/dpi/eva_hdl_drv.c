@@ -39,7 +39,7 @@ void eva_hdl_init(){
     eva_bus_t.eva_t->control = EVA_BUS_INIT;
 
     while(eva_bus_t.eva_t->control == EVA_BUS_INIT ){
-        usleep(1);
+        EVA_UNIT_DELAY;
         if(eva_bus_t.sys_sigint == 1){
             eva_bus_t.sys_sigint = 0;
             //pause();
@@ -61,9 +61,11 @@ void eva_hdl_init(){
  
 }
 
-void eva_hdl_stop( svBit *stop,
+void eva_hdl_alive( svBit *stop,
                    svBit *error
                    ){
+    *stop  = 0;
+    *error = 0;
 
     if( eva_bus_t.eva_t->control == EVA_BUS_STOP){
         fprintf(stderr, " @EVA DEMO set STOP detected , ready out ...\n");  
@@ -72,22 +74,10 @@ void eva_hdl_stop( svBit *stop,
         eva_bus_t.eva_t->control  = EVA_BUS_INIT;
 
         *stop = 1;
-    }else{
-        *stop = 0;
+    }else if(eva_bus_t.eva_t->control == EVA_BUS_ERROR){
+        *error = 1;
+        eva_bus_t.eva_t->control  = EVA_BUS_INIT;
     }
-
-    *error  = eva_bus_t.eva_t->error;
-    eva_bus_t.eva_t->error = 0; //clear it to generate one cycle signal
-}
-
-void eva_hdl_pause(){
-
-    if( eva_bus_t.eva_t->control == EVA_BUS_PAUSE){
-        fprintf(stderr, " @EVA DEMO set PAUSE detected , wait alive ...\n");  
-    
-        eva_hdl_init();
-    }
-
 }
 
 void eva_ahb_bus_func_i( const svBit        hready,
@@ -291,7 +281,10 @@ void eva_axi_rd_func_o( svBit             *arready,
       
             if(*rvalid){
                 eva_bus_t.eva_t->axi_r_addr = eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr;
-                eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr += 16;
+                if(eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].size == 4)
+                    eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr += 16;
+                else if(eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].size == 3)
+                    eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr += 8;
 
                 barrier();
                 eva_bus_t.eva_t->axi_r_sync = EVA_SYNC;
@@ -412,7 +405,8 @@ void eva_axi_wr_func_o( svBit  *awready,
 	// PART I : COMMAND PROCESS
 	if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) ){
     
-		if( (eva_bus_t.awburst != 1) || (eva_bus_t.awsize != 4) ){
+		if( (eva_bus_t.awburst != 1) //|| (eva_bus_t.awsize != 4) 
+            ){
 			fprintf(stderr," @EVA HDL not support parameter detected in AXI write command  burst %x , size %x\n",
 					eva_bus_t.awburst, eva_bus_t.awsize );
 
@@ -475,7 +469,10 @@ void eva_axi_wr_func_o( svBit  *awready,
 
       
 		eva_bus_t.eva_t->axi_w_addr = eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr;
-		eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr += 16;
+        if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].size == 4)
+            eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr += 16;
+        else if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].size == 3)
+            eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr += 8;
     
 		eva_bus_t.eva_t->axi_w_strb  = eva_bus_t.wstrb;
 		eva_bus_t.eva_t->axi_w_data0 = eva_bus_t.wdata_0;
@@ -571,42 +568,10 @@ int evaScopeGet(char *path){
 }
 
 void evaScopeGetHandle(){
-    uint32_t val;
-    if( ((eva_bus_t.eva_t->resv & EVA_WAIT_SYNC_MSK) == EVA_WAIT_SYNC_MSK) &&
-        (eva_bus_t.waitMarkEnable == 0)
-        ){
-        eva_bus_t.fp = fopen("./evaScopeGet.txt","r");
-        if(eva_bus_t.fp == NULL){
-            fprintf(stderr,"@evaScopeGetHandle: Open file ./evaScopeGet.txt FAILED !\n");
-            return ;
-        }
-    
-        fscanf(eva_bus_t.fp,"%s %x %d", eva_bus_t.scopePath, &eva_bus_t.scopeValue, &eva_bus_t.scopeMode);
-        if(eva_bus_t.scopeMode == 1)
-            fprintf(stderr,"@evaScopeGetHandle +wait: %s == %x\n", eva_bus_t.scopePath, eva_bus_t.scopeValue);
-        else
-            fprintf(stderr,"@evaScopeGetHandle +wait: %s != %x\n", eva_bus_t.scopePath, eva_bus_t.scopeValue);
-
-        fclose(eva_bus_t.fp);
-
-        eva_bus_t.waitMarkEnable = 1;
-    }
-
-    if( eva_bus_t.waitMarkEnable == 1 ){
-        val = evaScopeGet(eva_bus_t.scopePath);
-        if(eva_bus_t.scopeMode == EVA_SCOPE_CMP_MODE_EQUAL ){
-            if(val == eva_bus_t.scopeValue){
-                eva_bus_t.eva_t->resv = eva_bus_t.eva_t->resv & (~EVA_WAIT_SYNC_MSK);
-                eva_bus_t.waitMarkEnable = 0;
-                fprintf(stderr,"@evaScopeGetHandle +wait: %s == %x OK\n", eva_bus_t.scopePath, eva_bus_t.scopeValue);
-            }
-        }else{
-            if(val != eva_bus_t.scopeValue){
-                eva_bus_t.eva_t->resv = eva_bus_t.eva_t->resv & (~EVA_WAIT_SYNC_MSK);
-                eva_bus_t.waitMarkEnable = 0;
-                fprintf(stderr,"@evaScopeGetHandle +wait: %s != %x OK\n", eva_bus_t.scopePath, eva_bus_t.scopeValue);
-            }
-        }
+    // do Get Process
+    if( eva_bus_t.eva_t->get == EVA_GET_SYNC_REQ ){
+        eva_bus_t.eva_t->getValue = evaScopeGet( eva_bus_t.eva_t->str );
+        eva_bus_t.eva_t->get = EVA_GET_SYNC_ACK;
     }
 
 }

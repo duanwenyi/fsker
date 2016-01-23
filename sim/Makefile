@@ -10,6 +10,7 @@ CXX         = g++
 CFLAGS      = -pipe -O2 -Wall -W $(DEFINES) -lpthread
 CXXFLAGS    = -pipe -O2 -Wall -W $(DEFINES) -lpthread
 INCPATH     = -I$(EVA_PATH) -I$(EVA_PRO_PATH)/shm/dpi -I$(IES_HOME)/tools/include
+VCS_INCPATH = -I$(EVA_PATH) -I$(EVA_PRO_PATH)/shm/dpi -I$(VCS_HOME)/include
 #-I$(VCS_HOME)/include
 LINK        = gcc
 LFLAGS      = -Wl -lpthread
@@ -17,10 +18,11 @@ LIBS        =
 
 # HDL comple options when using VCS
 VCS_SIM_EXEC   = ./simv_exec
-VCS_CMPL_OPTS  = -sverilog +v2k +libext+.v+.sv +verilog2001ext+.v +vcs+lic+wait +plusarg_save +notimingcheck +nospecify -timescale=1ns/10ps -debug
+VCS_MODE       = -full64
+VCS_CMPL_OPTS  = -sverilog +v2k +libext+.v+.sv +verilog2001ext+.v +vcs+lic+wait +plusarg_save +notimingcheck +nospecify -timescale=1ns/10ps -debug $(VCS_MODE)
 VCS_CMPL_OPTS += +incdir+$(VCS_HOME)/etc/vmm +vpi
 VCS_CMPL_OPTS += -Mdir=./output/vmm_test_scrc -o $(VCS_SIM_EXEC) -l ./output/vmm_test.cmp_log
-VCS_CMPL_OPTS += +vpdfile+simv.vpd
+#VCS_CMPL_OPTS += +vpdfile+simv.vpd
 
 VCS_RUN_OPTS   = -l ./simv.log -ucli -i vcs_sim.tcl
 
@@ -40,7 +42,7 @@ HDL_COMPILER  = ncvlog
 # VCS
 #USER_RUN_OPTS += -ucli -i ./wave_fsdb.do
 
-eva:
+app:
 	make -f ../app/Makefile
 
 dpi:
@@ -54,7 +56,7 @@ run:
 
 
 sstb:
-	$(CC) -Wall -g -fPIC -m32 $(EVA_SRC) $(INCPATH) -DUSING_VCS_COMPILER -shared -o libdpi.so
+	$(CXX) -Wall -g -fPIC $(EVA_SRC) $(VCS_INCPATH) -DUSING_VCS_COMPILER -shared -o libdpi.so
 	@mkdir -p output
 	vcs -f project.f libdpi.so $(VCS_CMPL_OPTS)
 
@@ -62,10 +64,10 @@ srun:
 	$(VCS_SIM_EXEC) $(VCS_RUN_OPTS)
 
 elog:
-	./eva_demo 2>&1 | tee eva_run.log
+	./app_demo 2>&1 | tee app_run.log
 
 ipcs:
 	ipcs -m |grep $$USER |awk '{print $$2}' | xargs ipcrm -m
 
 clean:
-	rm *.fsdb INCA_libs libdpi.so *.log eva_demo *.shm *.key evaScopeGet.txt output simv_exec* -rf
+	rm *.fsdb INCA_libs libdpi.so *.log app_demo *.shm *.key output simv_exec* -rf

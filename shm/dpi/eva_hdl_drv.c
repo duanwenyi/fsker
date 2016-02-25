@@ -404,6 +404,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 	int timeout = 0;
 
 	int mark_active = 0;
+    int fake_new = 0;
 	// PART I : COMMAND PROCESS
 	if(eva_bus_t.awvalid && (eva_bus_t.axi_wcmd_nums < EVA_AXI_MAX_OUTSTANDING) ){
     
@@ -417,6 +418,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 			return ;
 		}else if(eva_bus_t.axi_w[eva_bus_t.awid].valid){
 			//fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI write command \n", eva_bus_t.arid );
+            fake_new = 1;
 		}else if(!eva_bus_t.axi_w[eva_bus_t.awid].valid){
 
 			eva_bus_t.axi_w[eva_bus_t.awid].addr_base  = GEN_DMA_ADDR64( eva_bus_t.awaddr_high, eva_bus_t.awaddr_low);
@@ -456,10 +458,10 @@ void eva_axi_wr_func_o( svBit  *awready,
 	eva_bus_t.axi_pre_awready = *awready;
 
 	// PART II : DATA PROCESS
-	if( (eva_bus_t.axi_wcmd_nums > 0 ) && 
-		(!((eva_bus_t.wid == eva_bus_t.awid) && eva_bus_t.awvalid)) &&
+	if( (!eva_bus_t.axi_cur_wactive) && 
+        (eva_bus_t.axi_wcmd_nums > 0 ) && 
+        (!fake_new) &&
 		eva_bus_t.axi_w[eva_bus_t.wid].valid &&
-		(!eva_bus_t.axi_cur_wactive) && 
 		eva_bus_t.wvalid 
 		){
 		eva_bus_t.axi_cur_wactive = 1;

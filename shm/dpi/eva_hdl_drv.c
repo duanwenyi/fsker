@@ -36,20 +36,19 @@ void eva_hdl_init(){
 
     eva_bus_t.eva_t = (EVA_BUS_ST*)eva_map(1);
 
-    eva_bus_t.eva_t->control = EVA_BUS_INIT;
-
-    while(eva_bus_t.eva_t->control == EVA_BUS_INIT ){
-        EVA_UNIT_DELAY;
-        if(eva_bus_t.sys_sigint == 1){
-            eva_bus_t.sys_sigint = 0;
-            //pause();
-            break;
-        }
-    }
-  
     if( eva_bus_t.eva_t->control != EVA_BUS_ACK){
-        fprintf(stderr, " @EVA DEMO is not response correct, exit .\n");  
-        exit(EXIT_FAILURE);  
+        eva_bus_t.eva_t->control = EVA_BUS_INIT;
+
+        while(eva_bus_t.eva_t->control == EVA_BUS_INIT ){
+            EVA_UNIT_DELAY;
+            if(eva_bus_t.sys_sigint == 1){
+                eva_bus_t.sys_sigint = 0;
+                //pause();
+                break;
+            }
+        }
+        //fprintf(stderr, " @EVA DEMO is not response correct, exit .\n");  
+        //exit(EXIT_FAILURE);  
     }
 
     eva_bus_t.eva_t->control    = EVA_BUS_ALIVE;

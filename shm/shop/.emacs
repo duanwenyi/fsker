@@ -1,12 +1,16 @@
 ;; .emacs
 (setq inhibit-splash-screen t)
 
-(setq additional-paths '("/IDE/emacs" "/IDE/emacs/auto-complete" "/IDE/emacs/popup" "/IDE/emacs/fuzzy"))
+(setq additional-paths '("/icdev/emacs" "/icdev/emacs/auto-complete" "/icdev/emacs/popup" "/icdev/emacs/fuzzy"))
 (setq load-path (append additional-paths load-path))
-;(require 'auto-complete-config)
-;(ac-config-default)
-;(require 'auto-complete-clang)
-;(require 'sr-speedbar)
+
+(require 'sr-speedbar)
+
+
+(require 'auto-complete-config)
+(ac-config-default)
+(require 'auto-complete-clang)
+
 (ffap-bindings)
 
 ;(load "desktop")
@@ -41,6 +45,15 @@ vi style of % jumping to matching brace."
         ((looking-at "\\s\)") (forward-char 1) (backward-list 1))
         (t (self-insert-command (or arg 1)))))
 
+(setq verilog-indent-level             4 
+	  verilog-indent-level-module      4 
+	  verilog-indent-level-declaration 4 
+	  verilog-indent-level-behavioral  4 
+	  verilog-indent-level-directive   2 
+	  verilog-case-indent              4 
+	  verilog-auto-newline             nil 
+	  verilog-tab-always-indent        t 
+	  ) 
 
 ;(defcustom comint-password-prompt-regexp
 ;"\\(\\|[Oo]ld \\|[Nn]ew \\|keyberoa \\|'s \\|login \\|^CVS \\|^[Pp]assword\\ (again)\\? \\|pass phrase \\|Enter passphrase \\)\ \\(for [^@ \t\n] + @[^@ \t\n]+\\)?:\\s *\\'"
@@ -129,6 +142,8 @@ vi style of % jumping to matching brace."
 (global-set-key [f9] 'query-replace)
 (global-set-key [f8] 'dirs)
 (global-set-key [C-f8] 'auto-complete-mode)
+(global-set-key [S-f8] 'sr-speedbar-open)
+
 (global-set-key [C-f9] 'query-replace-regexp)
 (global-set-key [S-f9] 'query-replace-reg-t)
 (defun query-replace-reg-t (to-string)
@@ -174,9 +189,17 @@ vi style of % jumping to matching brace."
 (global-set-key [?\C-.] 'ffap-copy-string-as-kill)
 (global-set-key [?\C-/] 'isearch-symbol-at-point)
 
-(setq-default c-basic-offset 4
-			  tab-width 4
-			  indent-tabs-mode t)
+(custom-set-variables
+ '(indent-line-function 'insert-tab)
+ '(indent-tabs-mode nil)
+ '(default-tab-width 4)
+ '(tab-width 4)
+ )
+
+(setq indent-tabs-mode nil) 
+(setq default-tab-width 4) 
+(setq tab-width 4) 
+(setq c-basic-offset 4) 
 
 ;;; Code: 
 (defun isearch-yank-regexp (regexp) 
@@ -217,6 +240,37 @@ vi style of % jumping to matching brace."
   (let ((start (point))) 
     (isearch-forward-regexp nil 1) 
     (isearch-yank-symbol partialp))) 
+
+(setq-default cursor-type 'bar) 
+
+(defun xah-copy-to-register-1 ()
+  "Copy current line or text selection to register 1.
+See also: `xah-paste-from-register-1', `copy-to-register'.
+
+URL `http://ergoemacs.org/emacs/elisp_copy-paste_register_1.html'
+Version 2015-12-08"
+  (interactive)
+  (let (ξp1 ξp2)
+    (if (region-active-p)
+        (progn (setq ξp1 (region-beginning))
+               (setq ξp2 (region-end)))
+      (progn (setq ξp1 (line-beginning-position))
+             (setq ξp2 (line-end-position))))
+    (copy-to-register ?1 ξp1 ξp2)
+    (message "copied to register 1: 「%s」." (buffer-substring-no-properties ξp1 ξp2))))
+
+(defun xah-paste-from-register-1 ()
+  "Paste text from register 1.
+See also: `xah-copy-to-register-1', `insert-register'.
+URL `http://ergoemacs.org/emacs/elisp_copy-paste_register_1.html'
+Version 2015-12-08"
+  (interactive)
+  (when (use-region-p)
+    (delete-region (region-beginning) (region-end)))
+  (insert-register ?1 t))
+
+(global-set-key [?\C-4] 'xah-copy-to-register-1 )
+(global-set-key [?\M-4] 'xah-paste-from-register-1 )
 
 (shell)
 (rename-buffer "shell-1")

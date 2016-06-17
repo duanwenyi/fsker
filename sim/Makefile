@@ -16,25 +16,30 @@ LINK        = gcc
 LFLAGS      = -Wl -lpthread
 LIBS        = 
 
+PRO_FILE    = ../cfg/project.f
+LIB_DIR     = ./pre_sim
+
 # HDL comple options when using VCS
 VCS_SIM_EXEC   = ./simv_exec
 VCS_MODE       = -full64
 VCS_CMPL_OPTS  = -sverilog +v2k +libext+.v+.sv +verilog2001ext+.v +vcs+lic+wait +plusarg_save +notimingcheck +nospecify -timescale=1ns/10ps -debug $(VCS_MODE)
 VCS_CMPL_OPTS += +incdir+$(VCS_HOME)/etc/vmm +vpi
 VCS_CMPL_OPTS += -Mdir=./output/vmm_test_scrc -o $(VCS_SIM_EXEC) -l ./output/vmm_test.cmp_log
+VCS_CMPL_OPTS += -f ${PRO_FILE} ${LIB_DIR}/libdpi.so
 #VCS_CMPL_OPTS += +vpdfile+simv.vpd
 
-VCS_RUN_OPTS   = -l ./simv.log -ucli -i vcs_sim.tcl
+VCS_RUN_OPTS   = -l ${LIB_DIR}/simv.log -ucli -i ../cfg/vcs_sim.tcl
 
 
 
 ## HDL compile options
 TOP_MODULE    = TH
-NC_MODE       = -64BIT
-DUT_CMPL_OPTS = -sv -update ${NC_MODE}
+NC_MODE       = -64BIT 
+#-CDS_IMPLICIT_TMPDIR ${LIB_DIR} -CDSLIB ../cfg/cds.lib -HDLVAR ../cfg/hdl.var
+DUT_CMPL_OPTS = -sv -update ${NC_MODE} -f ${PRO_FILE} -LOGFILE ${LIB_DIR}/ncvlog.log
 #-loadvpi ./libdpi.so:setup_eva_callbacks  ## remove by using DPI interface replace VPI
-DUT_ELAB_OPTS = -delay_mode zero ${NC_MODE} -notimingchecks -noneg_tchk -access +rwc -timescale 1ns/10ps ${TOP_MODULE}
-DUT_RUN_OPTS  = ${TOP_MODULE} ${NC_MODE} -nontcglitch -errormax 1 -input wave.tcl
+DUT_ELAB_OPTS = -delay_mode zero ${NC_MODE} -notimingchecks -noneg_tchk -access +rwc -timescale 1ns/10ps ${TOP_MODULE} -LOGFILE ${LIB_DIR}/ncelab.log
+DUT_RUN_OPTS  = ${TOP_MODULE} ${NC_MODE} -nontcglitch -errormax 1 -input ../cfg/wave.tcl
 
 HDL_COMPILER  = ncvlog
 
@@ -46,19 +51,23 @@ app:
 	make -f ../app/Makefile
 
 dpi:
-	$(CXX) -Wall -g -fPIC $(DEFINES) $(EVA_SRC) $(INCPATH) -shared -o libdpi.so
+	$(CXX) -Wall -g -fPIC $(DEFINES) $(EVA_SRC) $(INCPATH) -shared -o $(LIB_DIR)/libdpi.so
 
 svtb: dpi
-	ncvlog -f project.f $(DUT_CMPL_OPTS)
+	ncvlog $(DUT_CMPL_OPTS)
 	ncelab $(DUT_ELAB_OPTS)
+
+ncvlog_dbg:
+	nchelp $(DUT_CMPL_OPTS)
+
 run:
 	ncsim $(DUT_RUN_OPTS)
 
 
 sstb:
-	$(CXX) -Wall -g -fPIC $(EVA_SRC) $(VCS_INCPATH) -DUSING_VCS_COMPILER -shared -o libdpi.so
+	$(CXX) -Wall -g -fPIC $(EVA_SRC) $(VCS_INCPATH) -DUSING_VCS_COMPILER -shared -o $(LIB_DIR)/libdpi.so
 	@mkdir -p output
-	vcs -f project.f libdpi.so $(VCS_CMPL_OPTS)
+	vcs $(VCS_CMPL_OPTS)
 
 srun:
 	$(VCS_SIM_EXEC) $(VCS_RUN_OPTS)
@@ -70,4 +79,4 @@ ipcs:
 	ipcs -m |grep $$USER |awk '{print $$2}' | xargs ipcrm -m
 
 clean:
-	rm *.fsdb INCA_libs libdpi.so *.log app_demo *.shm *.key output simv_exec* -rf
+	rm *.fsdb INCA_libs *.log app_demo *.shm *.key output simv_exec* ${LIB_DIR}/* -rf

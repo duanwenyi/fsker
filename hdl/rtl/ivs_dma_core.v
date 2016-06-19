@@ -1,14 +1,48 @@
 
 module IVS_DMA_CORE(/*AUTOARG*/
-                    // Outputs
-                    arvalid, arid, araddr, arlen, arsize, arburst, arlock, arcache,
-                    arport, arregion, arqos, aruser, rready, awvalid, awid, awaddr,
-                    awlen, awsize, awburst, awlock, awcache, awport, awregion, awqos,
-                    awuser, wvalid, wlast, wid, wdata, wstrb,
-                    // Inputs
-                    aclk, arst_n, arready, rvalid, rid, rdata, rlast, rresp, awready,
-                    wready
-                    );
+    // Outputs
+    arvalid,
+    arid,
+    araddr,
+    arlen,
+    arsize,
+    arburst,
+    arlock,
+    arcache,
+    arport,
+    arregion,
+    arqos,
+    aruser,
+    rready,
+    awvalid,
+    awid,
+    awaddr,
+    awlen,
+    awsize,
+    awburst,
+    awlock,
+    awcache,
+    awport,
+    awregion,
+    awqos,
+    awuser,
+    wvalid,
+    wlast,
+    wid,
+    wdata,
+    wstrb,
+    // Inputs
+    aclk,
+    arst_n,
+    arready,
+    rvalid,
+    rid,
+    rdata,
+    rlast,
+    rresp,
+    awready,
+    wready
+    );
     input               aclk;
     input               arst_n;
 

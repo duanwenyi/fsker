@@ -1,13 +1,33 @@
 
 module IVS_PI_MGR(/*autoarg*/
     // Outputs
-    dma_cmd_fetch_req, dma_rdata_rdy, dma_ar_len, dma_ar_base,
-    dma_cmd_resp, frm_mode, frm_format, frm_line_stride, frm_width,
-    frm_height, frm_x_steps, frm_y_steps, frm_x_stride, frm_y_stride,
-    frm_i_base, frm_o_base, slot_load_par,
+    dma_cmd_fetch_req,
+    dma_rdata_rdy,
+    dma_ar_len,
+    dma_ar_base,
+    dma_cmd_resp,
+    frm_mode,
+    frm_format,
+    frm_line_stride,
+    frm_width,
+    frm_height,
+    frm_x_steps,
+    frm_y_steps,
+    frm_x_stride,
+    frm_y_stride,
+    frm_i_base,
+    frm_o_base,
+    slot_load_par,
     // Inputs
-    clk, rst_n, dma_ci, dma_cmd_base, dma_ar_rdy, dma_rdata_vld,
-    dma_rdata_last, dma_rdata, slot_pro_done
+    clk,
+    rst_n,
+    dma_ci,
+    dma_cmd_base,
+    dma_ar_rdy,
+    dma_rdata_vld,
+    dma_rdata_last,
+    dma_rdata,
+    slot_pro_done
     );
     parameter  IDLE      = 0;
     parameter  SEL_CHNL  = 1;

@@ -6,6 +6,7 @@
 
 (require 'sr-speedbar)
 
+(load "verilog-mode")
 
 (require 'auto-complete-config)
 (ac-config-default)
@@ -52,6 +53,7 @@ vi style of % jumping to matching brace."
 	  verilog-indent-level-directive   2 
 	  verilog-case-indent              4 
 	  verilog-auto-newline             nil 
+	  verilog-auto-arg-format          `single
 	  verilog-tab-always-indent        t 
 	  ) 
 
@@ -241,7 +243,7 @@ vi style of % jumping to matching brace."
     (isearch-forward-regexp nil 1) 
     (isearch-yank-symbol partialp))) 
 
-(setq-default cursor-type 'bar) 
+;(setq-default cursor-type 'bar) 
 
 (defun xah-copy-to-register-1 ()
   "Copy current line or text selection to register 1.
@@ -273,4 +275,4 @@ Version 2015-12-08"
 (global-set-key [?\M-4] 'xah-paste-from-register-1 )
 
 (shell)
-(rename-buffer "shell-1")
+(rename-buffer "she")

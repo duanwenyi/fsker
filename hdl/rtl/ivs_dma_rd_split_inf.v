@@ -75,8 +75,6 @@ module IVS_DMA_RD_SPLIT_INF (/*AUTOARG*/
     reg [7:0]           cur_left_bytes_minus1;
     reg [6:0]           cur_max_bytes;
     reg [3:0]           cur_len;
-    reg [3:0]           cur_da_cnt;
-    reg [3:0]           cur_i_len;
 
     reg [2:0]           bytes_ofst;
 
@@ -203,7 +201,18 @@ module IVS_DMA_RD_SPLIT_INF (/*AUTOARG*/
      */
 
     wire                bt_not_aligned = bytes_ofst != 3'd0;
-    wire                fix_i_da_en = valid_i_da_en | (split_last & split_pos_cal & bt_not_aligned);
+    wire                fake_i_da_en   = (split_last & split_pos_cal & bt_not_aligned);
+    wire                fix_i_da_en    = valid_i_da_en | fake_i_da_en;
+
+    wire                fix_i_da_last  = fake_i_da_en | (~bt_not_aligned & valid_i_da_en_last);
+
+    always @(posedge clk or negedge rst_n)
+      if(~rst_n)
+        fix_i_da_last_ff   <= 1'b0;
+      else if(fix_i_da_last^fix_i_da_last_ff)
+        fix_i_da_last_ff   <= fix_i_da_last;
+
+    assign ori_rlast = fix_i_da_last_ff;
     
     always @(posedge clk or negedge rst_n)
       if(~rst_n)

@@ -1,9 +1,14 @@
 +incdir+../hdl/rtl
 
+../hdl/rtl/ivs_def.v
+
 ../hdl/rtl/ivs_onehot_bin_sel.v
 ../hdl/rtl/ivs_onehot_dec_sel.v
 ../hdl/rtl/ivs_pi_mgr.v
 ../hdl/rtl/ivs_slot_cmd_mgr.v
+
+../hdl/rtl/ivs_dma_rd_inf.v
+../hdl/rtl/ivs_dma_wr_inf.v
 
 ../hdl/rtl/ivs_slv.v
 ../hdl/rtl/ivs_top.v

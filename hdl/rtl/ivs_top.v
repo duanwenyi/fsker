@@ -12,7 +12,7 @@ module IVS_TOP(/*AUTOARG*/
     arburst,
     arlock,
     arcache,
-    arport,
+    arprot,
     arregion,
     arqos,
     aruser,
@@ -25,7 +25,7 @@ module IVS_TOP(/*AUTOARG*/
     awburst,
     awlock,
     awcache,
-    awport,
+    awprot,
     awregion,
     awqos,
     awuser,
@@ -88,7 +88,7 @@ module IVS_TOP(/*AUTOARG*/
     output [1:0]         arburst;     // [1:0]  2'b01 
     output               arlock;                      
     output [3:0]         arcache;     // [3:0]        
-    output [2:0]         arport;      // [2:0]        
+    output [2:0]         arprot;      // [2:0]        
     output [3:0]         arregion;    // [3:0]        
     output [3:0]         arqos;       // [3:0]        
     output [7:0]         aruser;      // [7:0]        
@@ -110,7 +110,7 @@ module IVS_TOP(/*AUTOARG*/
     output [1:0]         awburst;     // [1:0]  2'b01  
     output               awlock;                       
     output [3:0]         awcache;     // [3:0]         
-    output [2:0]         awport;      // [2:0]         
+    output [2:0]         awprot;      // [2:0]         
     output [3:0]         awregion;    // [3:0]         
     output [3:0]         awqos;       // [3:0]         
     output [7:0]         awuser;      // [7:0]         
@@ -132,6 +132,10 @@ module IVS_TOP(/*AUTOARG*/
     wire [31:0]         cfg_par5;               // From U_IVS_SLV of IVS_SLV.v
     wire [31:0]         cfg_par6;               // From U_IVS_SLV of IVS_SLV.v
     wire [31:0]         cfg_par7;               // From U_IVS_SLV of IVS_SLV.v
+    wire [31:0]         cfg_par8;               // From U_IVS_SLV of IVS_SLV.v
+    wire [31:0]         cfg_par9;               // From U_IVS_SLV of IVS_SLV.v
+    wire [31:0]         cfg_par10;              // From U_IVS_SLV of IVS_SLV.v
+    wire [31:0]         cfg_par11;              // From U_IVS_SLV of IVS_SLV.v
     wire [31:0]         dma_ar_base;            // From UIVS_PI_MGR of IVS_PI_MGR.v
     wire [4:0]          dma_ar_len;             // From UIVS_PI_MGR of IVS_PI_MGR.v
     wire                dma_cmd_fetch_req;      // From UIVS_PI_MGR of IVS_PI_MGR.v
@@ -169,7 +173,28 @@ module IVS_TOP(/*AUTOARG*/
     wire                slot_load_par;          // From UIVS_PI_MGR of IVS_PI_MGR.v
     wire                sw_rst;                 // From U_IVS_SLV of IVS_SLV.v
     // End of automatics
+
+    wire [31:0]         dma_ci       = cfg_par0;
+    wire [31:0]         dma_cmd_base = cfg_par1;
+    wire [63:0]         dma_rdata    = {cfg_par3, cfg_par2};
+
+    wire [31:0]         dr0_base = cfg_par4;
+    wire [31:0]         dr1_base = cfg_par5;
+    wire [31:0]         dr2_base = cfg_par10;
     
+    wire [31:0]         dw0_base = cfg_par6;
+    wire [31:0]         dw1_base = cfg_par7;
+
+    wire [5:0]          dr0_len = cfg_par8[5:0];
+    wire [5:0]          dr1_len = cfg_par8[13:8];
+    wire [5:0]          dr2_len = cfg_par8[21:16];
+
+    wire [5:0]          dw0_len = cfg_par9[5:0];
+    wire [5:0]          dw1_len = cfg_par9[13:8];
+
+    wire [31:0]         dw0_wdata = cfg_par10;
+    wire [31:0]         dw1_wdata = cfg_par11;
+
     IVS_SLV U_IVS_SLV(/*AUTOINST*/
                       // Outputs
                       .hready_out       (hready_out),
@@ -183,6 +208,10 @@ module IVS_TOP(/*AUTOARG*/
                       .cfg_par5         (cfg_par5[31:0]),
                       .cfg_par6         (cfg_par6[31:0]),
                       .cfg_par7         (cfg_par7[31:0]),
+                      .cfg_par8         (cfg_par8[31:0]),
+                      .cfg_par9         (cfg_par9[31:0]),
+                      .cfg_par10        (cfg_par10[31:0]),
+                      .cfg_par11        (cfg_par11[31:0]),
                       .glb_ctrl         (glb_ctrl[31:0]),
                       .sw_rst           (sw_rst),
                       // Inputs
@@ -219,8 +248,8 @@ module IVS_TOP(/*AUTOARG*/
                            .frm_o_base          (frm_o_base[31:0]),
                            .slot_load_par       (slot_load_par),
                            // Inputs
-                           .clk                 (clk),
-                           .rst_n               (rst_n),
+                           .clk                 (aclk),
+                           .rst_n               (arst_n),
                            .dma_ci              (dma_ci[31:0]),
                            .dma_cmd_base        (dma_cmd_base[31:0]),
                            .dma_ar_rdy          (dma_ar_rdy),
@@ -240,7 +269,7 @@ module IVS_TOP(/*AUTOARG*/
                                     .arburst            (arburst[1:0]),
                                     .arlock             (arlock),
                                     .arcache            (arcache[3:0]),
-                                    .arport             (arport[2:0]),
+                                    .arprot             (arprot[2:0]),
                                     .arregion           (arregion[3:0]),
                                     .arqos              (arqos[3:0]),
                                     .aruser             (aruser[7:0]),
@@ -283,7 +312,7 @@ module IVS_TOP(/*AUTOARG*/
                                     .awburst            (awburst[1:0]),
                                     .awlock             (awlock),
                                     .awcache            (awcache[3:0]),
-                                    .awport             (awport[2:0]),
+                                    .awprot             (awprot[2:0]),
                                     .awregion           (awregion[3:0]),
                                     .awqos              (awqos[3:0]),
                                     .awuser             (awuser[7:0]),
@@ -307,12 +336,12 @@ module IVS_TOP(/*AUTOARG*/
                                     .wready             (wready),
                                     .dw0_req            (dw0_req),
                                     .dw0_base           (dw0_base[31:0]),
-                                    .dw0_len            (dw0_len[31:0]),
-                                    .dw0_wdata          (dw0_wdata[`BDWD-1:0]),
+                                    .dw0_len            (dw0_len),
+                                    .dw0_wdata          (dw0_wdata),
                                     .dw1_req            (dw1_req),
                                     .dw1_base           (dw1_base[31:0]),
-                                    .dw1_len            (dw1_len[31:0]),
-                                    .dw1_wdata          (dw1_wdata[`BDWD-1:0]));
+                                    .dw1_len            (dw1_len),
+                                    .dw1_wdata          (dw1_wdata));
 
 endmodule // IVS_TOP
 

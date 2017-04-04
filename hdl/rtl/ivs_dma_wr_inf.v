@@ -9,7 +9,7 @@ module IVS_DMA_WR_INF(/*AUTOARG*/
     awburst,
     awlock,
     awcache,
-    awport,
+    awprot,
     awregion,
     awqos,
     awuser,
@@ -53,7 +53,7 @@ module IVS_DMA_WR_INF(/*AUTOARG*/
     output [1:0]        awburst;     // [1:0]  2'b01  
     output              awlock;                       
     output [3:0]        awcache;     // [3:0]         
-    output [2:0]        awport;      // [2:0]         
+    output [2:0]        awprot;      // [2:0]         
     output [3:0]        awregion;    // [3:0]         
     output [3:0]        awqos;       // [3:0]         
     output [7:0]        awuser;      // [7:0]         

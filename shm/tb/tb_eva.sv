@@ -35,20 +35,33 @@ module TB_EVA(/*AUTOARG*/
 
     parameter EVA_DLY_U = 0.1;
 
-    import "DPI-C" function void eva_hdl_init();
+    parameter SLV_AW = 32;
+    parameter SLV_DW = 32;
+
+    import "DPI-C" function void eva_hdl_init( input bit en_slv,
+                                               input bit [31:0] slv_cfg,
+                                               input bit        en_mst,
+                                               input bit [31:0] mst_cfg,
+                                               input bit        en_int,
+                                               input bit        en_get
+                                               );
     import "DPI-C" function void eva_hdl_alive( output bit stop,
                                                 output bit error
                                                 );
 
-    import "DPI-C" function void eva_ahb_bus_func_i( input bit       hready,
+    import "DPI-C" function void eva_ahb_bus_func_i( input bit        hready,
 													 input bit [1:0]  hresp,
-													 input bit [31:0] hrdata
+													 input bit [31:0] hrdata,
+													 input bit [31:0] hrdata_u
 													 );
     
     import "DPI-C" function void eva_ahb_bus_func_o( output bit [1:0]  htrans,
 													 output bit        hwrite,
+                                                     output bit [2:0]  hsize,
 													 output bit [31:0] haddr,
-													 output bit [31:0] hwdata
+													 output bit [31:0] haddr_u,
+													 output bit [31:0] hwdata,
+													 output bit [31:0] hwdata_u
 													 );
     
     import "DPI-C" function void eva_axi_rd_func_i( input bit        arvalid,
@@ -114,86 +127,103 @@ module TB_EVA(/*AUTOARG*/
 												    output bit [ 5:0] bid
 												    );
 
-    input                  hclk;
-    input                  hrest_n;
-
-    input                  aclk;
-    input                  arest_n;
-
-    output bit [1:0]       htrans;      
-    output bit             hwrite;      
-    output bit [31:0]      haddr;       
-    output bit [31:0]      hwdata;      
-    output bit [2:0]       hsize;     
-    output bit [2:0]       hburst;    
-    output bit [3:0]       hprot;     
-    output bit             hready_out;
+    input                     hclk;
+    input                     hrest_n;
     
-    input bit              hready_in;
-    input bit [1:0]        hresp; 
-    input bit [31:0]       hrdata;
+    input                     aclk;
+    input                     arest_n;
+    
+    output bit [1:0]          htrans;      
+    output bit                hwrite;      
+    output bit [SLV_AW-1:0]   haddr;       
+    output bit [SLV_DW-1:0]   hwdata;      
+    output bit [2:0]          hsize;     
+    output bit [2:0]          hburst;    
+    output bit [3:0]          hprot;     
+    output bit                hready_out;
+    
+    input bit                 hready_in;
+    input bit [1:0]           hresp; 
+    input bit [SLV_DW-1:0]    hrdata;
     
     // AXI Read  Part
-    output bit             arready;                     
-    input bit              arvalid;                     
-    input bit [5:0]        arid;        // [3:0]        
-    input bit [63:0]       araddr;                  
-    input bit [5:0]        arlen;       // [5:0]        
-    input bit [2:0]        arsize;      // [2:0]  3'b100
-    input bit [1:0]        arburst;     // [1:0]  2'b01 
-    input bit              arlock;                      
-    input bit [3:0]        arcache;     // [3:0]        
-    input bit [2:0]        arprot;      // [2:0]        
-    input bit [3:0]        arregion;    // [3:0]        
-    input bit [3:0]        arqos;       // [3:0]        
-    input bit [7:0]        aruser;      // [7:0]        
+    output bit                arready;                     
+    input bit                 arvalid;                     
+    input bit [5:0]           arid;        // [3:0]        
+    input bit [63:0]          araddr;                  
+    input bit [5:0]           arlen;       // [5:0]        
+    input bit [2:0]           arsize;      // [2:0]  3'b100
+    input bit [1:0]           arburst;     // [1:0]  2'b01 
+    input bit                 arlock;                      
+    input bit [3:0]           arcache;     // [3:0]        
+    input bit [2:0]           arprot;      // [2:0]        
+    input bit [3:0]           arregion;    // [3:0]        
+    input bit [3:0]           arqos;       // [3:0]        
+    input bit [7:0]           aruser;      // [7:0]        
     
-    input bit              rready;                      
-    output bit             rvalid;                      
-    output bit [5:0]       rid;              // [5:0] 
-    output bit [4:0]       ruser;            // [4:0] 
-    output bit [127:0]     rdata;            // [31:0]
-    output bit             rlast;                       
-    output bit [1:0]       rresp;   // [1:0] 
+    input bit                 rready;                      
+    output bit                rvalid;                      
+    output bit [5:0]          rid;         // [5:0] 
+    output bit [4:0]          ruser;       // [4:0] 
+    output bit [127:0]        rdata;       // [31:0]
+    output bit                rlast;                  
+    output bit [1:0]          rresp;       // [1:0] 
 
     // AXI Write Part
-    output bit             awready;                     
-    input bit              awvalid;                      
-    input bit [5:0]        awid;        // [3:0]         
-    input bit [63:0]       awaddr;                   
-    input bit [5:0]        awlen;       // [5:0]         
-    input bit [2:0]        awsize;      // [2:0]  3'b100 
-    input bit [1:0]        awburst;     // [1:0]  2'b01  
-    input bit              awlock;                       
-    input bit [3:0]        awcache;     // [3:0]         
-    input bit [2:0]        awprot;      // [2:0]         
-    input bit [3:0]        awregion;    // [3:0]         
-    input bit [3:0]        awqos;       // [3:0]         
-    input bit [7:0]        awuser;      // [7:0]         
+    output bit                awready;                     
+    input bit                 awvalid;                      
+    input bit [5:0]           awid;        // [3:0]         
+    input bit [63:0]          awaddr;                   
+    input bit [5:0]           awlen;       // [5:0]         
+    input bit [2:0]           awsize;      // [2:0]  3'b100 
+    input bit [1:0]           awburst;     // [1:0]  2'b01  
+    input bit                 awlock;                       
+    input bit [3:0]           awcache;     // [3:0]         
+    input bit [2:0]           awprot;      // [2:0]         
+    input bit [3:0]           awregion;    // [3:0]         
+    input bit [3:0]           awqos;       // [3:0]         
+    input bit [7:0]           awuser;      // [7:0]         
     
-    output bit             wready;                       
-    input bit              wvalid;                       
-    input bit              wlast;                        
-    input bit [5:0]        wid;                // [3:0]  
-    input bit [127:0]      wdata;            // [31:0]    
-    input bit [15:0]       wstrb ;   // [15:0] 
+    output bit                wready;                       
+    input bit                 wvalid;                       
+    input bit                 wlast;                        
+    input bit [5:0]           wid;                // [3:0]  
+    input bit [127:0]         wdata;            // [31:0]    
+    input bit [15:0]          wstrb ;   // [15:0] 
 
-    output bit             bvalid;
-    output bit [ 1:0]      bresp;
-    output bit [ 5:0]      bid;
-    input                  bready;
+    output bit                bvalid;
+    output bit [ 1:0]         bresp;
+    output bit [ 5:0]         bid;
+    input                     bready;
     
-    bit                    error;
-    bit                    stop;
-    reg [63:0]             tick;    // Using for debug
+    bit                       error;
+    bit                       stop;
+    reg [63:0]                tick;    // Using for debug
 
-    reg                    active;
+    reg                       active;
+
+    bit [63:0]                haddr_tmp;
+    bit [63:0]                hwdata_tmp;
+    bit [63:0]                hrdata_tmp;
+
+    assign haddr  = haddr_tmp[SLV_AW-1:0];
+    assign hwdata = hwdata_tmp[SLV_DW-1:0];
+    assign hrdata_tmp[SLV_DW-1:0] = hrdata;
+
+    generate
+        if(SLV_DW == 32 ) begin : GEN_HRDATA_UPPER_ZERO
+          assign hrdata_tmp[63:32] = 32'h0;
+        end else if(SLV_DW == 64 ) begin : GEN_HRDATA_UPPER
+          assign hrdata_tmp[63:32] = hrdata;
+        end
+    endgenerate
+    
 
     //assign (weak1,weak0)  arid = 6'b0;
     //assign (weak1,weak0)  wrid = 6'b0;
     
 
-    assign hsize  = 3'b10;
+    //assign hsize  = 3'b10;
     assign hburst = 3'b0;
     assign hprot  = 4'b0;
 
@@ -203,14 +233,18 @@ module TB_EVA(/*AUTOARG*/
       if(active) begin
 		  eva_ahb_bus_func_i( hready_in,
 							  hresp,
-							  hrdata
+							  hrdata,
+							  hrdata_tmp[63:32]
 							  );
 
 		  #EVA_DLY_U 
 		    eva_ahb_bus_func_o( htrans,
 							    hwrite,
-							    haddr,
-							    hwdata
+                                hsize,
+							    haddr_tmp[31:0],
+							    haddr_tmp[63:32],
+							    hwdata_tmp[31:0],
+							    hwdata_tmp[63:32]
 							    );
 		  
       end
@@ -292,11 +326,17 @@ module TB_EVA(/*AUTOARG*/
 
         @(posedge hrest_n );
         wait(arest_n == 1'b1);
-
+        #10ns;
         @(posedge aclk );
-      
+        
         active = 1'b1;
-        eva_hdl_init();
+        eva_hdl_init( 1'b1,
+                      {8'd0,8'd0,8'd32,8'd32},
+                      1'b1,
+                      {8'd128,8'd64,8'd128,8'd64},
+                      1'b1,
+                      1'b1
+                      );
     end
     
     always @(posedge aclk or negedge arest_n)
@@ -311,7 +351,7 @@ module TB_EVA(/*AUTOARG*/
 
 		  if(stop)begin
 		      $display(" @EVA SW STOPED ");
-		      #50ns;
+		      #1us;
 		      $finish();
 		  end
       end

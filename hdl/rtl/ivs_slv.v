@@ -1,13 +1,37 @@
 `include "ivs_def.v"
 
 module IVS_SLV(/*AUTOARG*/
-   // Outputs
-   hready_out, hresp, hrdata, cfg_par0, cfg_par1, cfg_par2, cfg_par3,
-   cfg_par4, cfg_par5, cfg_par6, cfg_par7, glb_ctrl, sw_rst,
-   // Inputs
-   hclk, hrst_n, hsel, htrans, hwrite, haddr, hwdata, hsize, hburst,
-   hprot, hready_in
-   );
+    // Outputs
+    hready_out,
+    hresp,
+    hrdata,
+    cfg_par0,
+    cfg_par1,
+    cfg_par2,
+    cfg_par3,
+    cfg_par4,
+    cfg_par5,
+    cfg_par6,
+    cfg_par7,
+    cfg_par8,
+    cfg_par9,
+    cfg_par10,
+    cfg_par11,
+    glb_ctrl,
+    sw_rst,
+    // Inputs
+    hclk,
+    hrst_n,
+    hsel,
+    htrans,
+    hwrite,
+    haddr,
+    hwdata,
+    hsize,
+    hburst,
+    hprot,
+    hready_in
+    );
 
     input                hclk;
     input                hrst_n;
@@ -35,6 +59,10 @@ module IVS_SLV(/*AUTOARG*/
     output reg [31:0]    cfg_par5;
     output reg [31:0]    cfg_par6;
     output reg [31:0]    cfg_par7;
+    output reg [31:0]    cfg_par8;
+    output reg [31:0]    cfg_par9;
+    output reg [31:0]    cfg_par10;
+    output reg [31:0]    cfg_par11;
 
     output reg [31:0]    glb_ctrl;
     output reg           sw_rst;
@@ -58,7 +86,11 @@ module IVS_SLV(/*AUTOARG*/
 									  {32{addr_ofst == `IVS_PAR4}} & cfg_par4 |
 									  {32{addr_ofst == `IVS_PAR5}} & cfg_par5 |
 									  {32{addr_ofst == `IVS_PAR6}} & cfg_par6 |
-									  {32{addr_ofst == `IVS_PAR7}} & cfg_par7
+									  {32{addr_ofst == `IVS_PAR7}} & cfg_par7 |
+									  {32{addr_ofst == `IVS_PAR8}} & cfg_par8 |
+									  {32{addr_ofst == `IVS_PAR9}} & cfg_par9 |
+									  {32{addr_ofst == `IVS_PAR10}} & cfg_par10 |
+									  {32{addr_ofst == `IVS_PAR11}} & cfg_par11 
 									  );
 
     wire                 sw_rst_s = wr_en_ff && (addr_ofst == `IVS_TRIG) && hwdata[0];
@@ -106,16 +138,20 @@ module IVS_SLV(/*AUTOARG*/
       end
       else if(wr_en_ff)
         case(addr_ofst)
-	        10'h000:   glb_ctrl  <= hwdata;
-	        
-	        10'h100:   cfg_par0  <= hwdata;
-	        10'h104:   cfg_par1  <= hwdata;
-	        10'h108:   cfg_par2  <= hwdata;
-	        10'h10c:   cfg_par3  <= hwdata;
-	        10'h110:   cfg_par4  <= hwdata;
-	        10'h114:   cfg_par5  <= hwdata;
-	        10'h118:   cfg_par6  <= hwdata;
-	        10'h11c:   cfg_par7  <= hwdata;
+	        10'h000:   glb_ctrl   <= hwdata;
+	                               
+	        10'h100:   cfg_par0   <= hwdata;
+	        10'h104:   cfg_par1   <= hwdata;
+	        10'h108:   cfg_par2   <= hwdata;
+	        10'h10c:   cfg_par3   <= hwdata;
+	        10'h110:   cfg_par4   <= hwdata;
+	        10'h114:   cfg_par5   <= hwdata;
+	        10'h118:   cfg_par6   <= hwdata;
+	        10'h11c:   cfg_par7   <= hwdata;
+	        10'h120:   cfg_par8   <= hwdata;
+	        10'h124:   cfg_par9   <= hwdata;
+	        10'h128:   cfg_par10  <= hwdata;
+	        10'h12c:   cfg_par11  <= hwdata;
         endcase // case (addr_ofst)
     
     

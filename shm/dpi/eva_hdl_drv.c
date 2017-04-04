@@ -11,18 +11,26 @@
 
 EVA_HDL_t eva_bus_t;
 
-//#define EVA_DEBUG
+#define EVA_DEBUG
 //#define EVA_AXI_DEBUG
-//#define EVA_CONTROL_C_OUT
+#define EVA_CONTROL_C_OUT
 
 void eva_handler(int s){
-    fprintf(stderr, " @EVA catch a SYSTEM interrupt .\n");  
+    eva_msg( " @EVA catch a SYSTEM interrupt .\n");  
     eva_bus_t.sys_sigint = 1;
 
 }  
 
 
-void eva_hdl_init(){
+void eva_hdl_init( const svBit en_slv,
+                   const svBitVecVal *slv_cfg,
+
+                   const svBit en_mst,
+                   const svBitVecVal *mst_cfg,
+
+                   const svBit en_int,
+                   const svBit en_get
+                   ){
     memset(&eva_bus_t, 0, sizeof(EVA_HDL_t));
 
 #ifdef EVA_CONTROL_C_OUT
@@ -35,47 +43,81 @@ void eva_hdl_init(){
 #endif
 
     eva_bus_t.eva_t = (EVA_BUS_ST*)eva_map(1);
-
-    if( eva_bus_t.eva_t->control != EVA_BUS_ACK){
-        eva_bus_t.eva_t->control = EVA_BUS_INIT;
-
-        while(eva_bus_t.eva_t->control == EVA_BUS_INIT ){
-            EVA_UNIT_DELAY;
-            if(eva_bus_t.sys_sigint == 1){
-                eva_bus_t.sys_sigint = 0;
-                //pause();
+    
+    do{
+        switch(eva_bus_t.eva_t->sync.sw)
+            {
+            case EVA_IDLE  : {
+                eva_bus_t.eva_t->sync.dut = EVA_INIT;
                 break;
             }
+            case EVA_INIT  : {
+                eva_bus_t.eva_t->mst_wr.data_0 = *slv_cfg;
+                eva_bus_t.eva_t->mst_wr.data_1 = *mst_cfg;
+
+                eva_bus_t.eva_t->mst_rd.data_0 = en_slv;
+                eva_bus_t.eva_t->mst_rd.data_1 = en_mst;
+                eva_bus_t.eva_t->mst_rd.data_2 = en_int;
+                eva_bus_t.eva_t->mst_rd.data_3 = en_get;
+                barrier();
+
+                eva_bus_t.eva_t->sync.dut = EVA_RDY;
+                break;
+            }
+            }
+
+        EVA_UNIT_DELAY;
+        
+        if(eva_bus_t.sys_sigint == 1){
+            eva_bus_t.sys_sigint = 0;
+            eva_msg("Get Contrl-C out ...\n");  
+            break;
         }
-        //fprintf(stderr, " @EVA DEMO is not response correct, exit .\n");  
-        //exit(EXIT_FAILURE);  
-    }
+    }while( eva_bus_t.eva_t->sync.dut != EVA_RDY);
 
-    eva_bus_t.eva_t->control    = EVA_BUS_ALIVE;
-    eva_bus_t.eva_t->ahb_sync   = EVA_SYNC_ACK;
-    eva_bus_t.eva_t->axi_w_sync = EVA_SYNC_ACK;
-    eva_bus_t.eva_t->axi_r_sync = EVA_SYNC_ACK;
+    eva_bus_t.eva_t->slv.sync = EVA_SYNC_ACK;
+    eva_bus_t.eva_t->get.sync = EVA_IDLE;
 
-    fprintf(stderr, " @EVA HDL is set ALIVE OK .\n");  
+    eva_bus_t.eva_t->mst_wr.sync = EVA_IDLE;
+    eva_bus_t.eva_t->mst_rd.sync = EVA_IDLE;
+
+    eva_msg( " @EVA HDL is set ALIVE now.\n");  
  
 }
 
 void eva_hdl_alive( svBit *stop,
-                   svBit *error
+                    svBit *error
                    ){
     *stop  = 0;
     *error = 0;
 
-    if( eva_bus_t.eva_t->control == EVA_BUS_STOP){
-        fprintf(stderr, " @EVA DEMO set STOP detected , ready out ...\n");  
-
-        eva_bus_t.eva_t->ahb_sync = EVA_SYNC_ACK;
-        eva_bus_t.eva_t->control  = EVA_BUS_INIT;
-
+    if( eva_bus_t.eva_t->sync.sw == EVA_STOP ){
+        eva_msg(" @EVA SW set STOP detected , ready out ...\n");  
+        eva_bus_t.eva_t->sync.dut = EVA_STOP;
         *stop = 1;
-    }else if(eva_bus_t.eva_t->control == EVA_BUS_ERROR){
+    }else if( eva_bus_t.eva_t->sync.sw == EVA_ERR ){
+        eva_msg(" @EVA SW set ERROR detected , ready out ...\n");  
+        eva_bus_t.eva_t->sync.dut = EVA_ERR;
         *error = 1;
-        eva_bus_t.eva_t->control  = EVA_BUS_INIT;
+    }else if( eva_bus_t.eva_t->sync.sw == EVA_PAUSE ){
+        eva_msg(" @EVA SW set PAUSE detected , sleep & wait wake up ...\n");  
+        eva_bus_t.eva_t->sync.dut = EVA_PAUSE;
+        
+        do{
+            if(eva_bus_t.eva_t->sync.sw == EVA_RDY) {
+                eva_bus_t.eva_t->sync.dut = EVA_RDY;
+                break;
+            }
+            
+            EVA_UNIT_DELAY;
+            
+            if(eva_bus_t.sys_sigint == 1){
+                eva_bus_t.sys_sigint = 0;
+                eva_msg("Get Contrl-C out ...\n");  
+                break;
+            }
+        }while( eva_bus_t.eva_t->sync.dut != EVA_RDY);
+
     }
     
     evaScopeGetHandle();
@@ -83,18 +125,23 @@ void eva_hdl_alive( svBit *stop,
 
 void eva_ahb_bus_func_i( const svBit        hready,
                          const svBitVecVal *hresp,
-                         const svBitVecVal *hrdata
+                         const svBitVecVal *hrdata,
+                         const svBitVecVal *hrdata_u
                          ){
-    eva_bus_t.hready = hready;
-    eva_bus_t.hresp  = *hresp & 0x3;
-    eva_bus_t.hrdata = *hrdata;
+    eva_bus_t.hready   = hready;
+    eva_bus_t.hresp    = *hresp & 0x3;
+    eva_bus_t.hrdata   = *hrdata;
+    eva_bus_t.hrdata_u = *hrdata_u;
 
 }
 
 void eva_ahb_bus_func_o( svBitVecVal *htrans,
                          svBit       *hwrite,
+                         svBitVecVal *hsize,
                          svBitVecVal *haddr,
-                         svBitVecVal *hwdata
+                         svBitVecVal *haddr_u,
+                         svBitVecVal *hwdata,
+                         svBitVecVal *hwdata_u
                          ){
     //*hsize  = 2; // FIXME
     //*hburst = 0; // FIXME
@@ -102,49 +149,53 @@ void eva_ahb_bus_func_o( svBitVecVal *htrans,
   
     switch(eva_bus_t.ahb_fsm){
     case EVA_AHB_IDLE:
-        if(eva_bus_t.eva_t->ahb_sync == EVA_SYNC){
-            *htrans = EVA_AHB_NONSEQ;
-            *haddr  = eva_bus_t.eva_t->ahb_addr;
-            *hwrite = eva_bus_t.eva_t->ahb_write;
+        if(eva_bus_t.eva_t->slv.sync == EVA_SYNC){
+            *htrans  = EVA_AHB_NONSEQ;
+            *haddr   = eva_bus_t.eva_t->slv.addr_l;
+            *haddr_u = eva_bus_t.eva_t->slv.addr_u;
+            *hwrite  = eva_bus_t.eva_t->slv.write;
+            *hsize   = eva_bus_t.eva_t->slv.size;
             //if(eva_bus_t.eva_t->ahb_write)
             // 	*hwdata = eva_bus_t.eva_t->ahb_data;
 
             eva_bus_t.ahb_fsm = EVA_AHB_NONSEQ;
 
 #ifdef EVA_DEBUG
-            fprintf(stderr," @AHB [IDLE] addr: 0x%8x data: 0x%8x write: %x\n",
-                    eva_bus_t.eva_t->ahb_addr, eva_bus_t.eva_t->ahb_data , eva_bus_t.eva_t->ahb_write);
+            eva_msg(" @AHB [IDLE] addr: 0x%8x data: 0x%8x write: %x\n",
+                    eva_bus_t.eva_t->slv.addr_l, eva_bus_t.eva_t->slv.data_l , eva_bus_t.eva_t->slv.write);
 #endif
         }
         break;
     case EVA_AHB_NONSEQ:
-        if(eva_bus_t.eva_t->ahb_write)
-            *hwdata = eva_bus_t.eva_t->ahb_data;
+        if(eva_bus_t.eva_t->slv.write)
+            *hwdata   = eva_bus_t.eva_t->slv.data_l;
+            *hwdata_u = eva_bus_t.eva_t->slv.data_u;
         if(eva_bus_t.hready){
             *htrans = 0;
             *hwrite = 0;
             eva_bus_t.ahb_fsm = EVA_AHB_SEQ;
         }
 #ifdef EVA_DEBUG
-        fprintf(stderr," @AHB [NONSEQ] addr: 0x%8x data: 0x%8x write: %x hready: %x\n",
-                eva_bus_t.eva_t->ahb_addr, eva_bus_t.eva_t->ahb_data , eva_bus_t.eva_t->ahb_write, eva_bus_t.hready);
+        eva_msg(" @AHB [NONSEQ] addr: 0x%8x data: 0x%8x write: %x hready: %x\n",
+                eva_bus_t.eva_t->slv.addr_l, eva_bus_t.eva_t->slv.data_l , eva_bus_t.eva_t->slv.write, eva_bus_t.hready);
 #endif
         break;
     case EVA_AHB_SEQ:
         if(eva_bus_t.hready){
-            eva_bus_t.eva_t->ahb_data = eva_bus_t.hrdata;
+            eva_bus_t.eva_t->slv.data_l = eva_bus_t.hrdata;
+            eva_bus_t.eva_t->slv.data_u = eva_bus_t.hrdata_u;
       
             eva_bus_t.ahb_fsm = EVA_AHB_IDLE;
 
-            eva_bus_t.eva_t->ahb_sync = EVA_SYNC_ACK;
+            eva_bus_t.eva_t->slv.sync = EVA_SYNC_ACK;
         }
 #ifdef EVA_DEBUG
-        fprintf(stderr," @AHB [SEQ] addr: 0x%8x data: 0x%8x write: %x hready: %x\n",
-                eva_bus_t.eva_t->ahb_addr, eva_bus_t.eva_t->ahb_data , eva_bus_t.eva_t->ahb_write, eva_bus_t.hready);
+        eva_msg(" @AHB [SEQ] addr: 0x%8x data: 0x%8x write: %x hready: %x\n",
+                eva_bus_t.eva_t->slv.addr_l, eva_bus_t.eva_t->slv.data_l , eva_bus_t.eva_t->slv.write, eva_bus_t.hready);
 #endif
         break;
     default:
-        fprintf(stderr, " @EVA AHB FSM error status detected !\n");  
+        eva_msg( " @EVA AHB FSM error status detected !\n");  
         eva_bus_t.ahb_fsm = EVA_AHB_IDLE;
         break;
     }
@@ -167,8 +218,6 @@ void eva_axi_rd_func_i( const svBit        arvalid,
 		      
                         const svBit        rready
                         ){
-  
-
 
     eva_bus_t.arvalid		=  arvalid;   
     eva_bus_t.arid		= *arid       & 0x3F;      
@@ -210,14 +259,14 @@ void eva_axi_rd_func_o( svBit             *arready,
     
         if( (eva_bus_t.arburst != 1) //|| (eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size != 4) 
             ){
-            fprintf(stderr," @EVA HDL not support parameter detected in AXI read command  burst %x , size %x\n",
+            eva_msg(" @EVA HDL not support parameter detected in AXI read command  burst %x , size %x\n",
                     eva_bus_t.axi_r[eva_bus_t.arid].burst, eva_bus_t.axi_r[eva_bus_t.arid].size );
       
             //eva_bus_t.axi_r[eva_bus_t.arid].burst      = 1;  // INCR
             //eva_bus_t.axi_r[eva_bus_t.axi_rcmd_nums].size       = 4;  // 16bytes
             return ;
         }else if(eva_bus_t.axi_r[eva_bus_t.arid].valid){
-            //fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI read command \n", eva_bus_t.awid );
+            //eva_msg(" @EVA HDL detected repeat ID [%d] in AXI read command \n", eva_bus_t.awid );
         }else if(!eva_bus_t.axi_r[eva_bus_t.arid].valid){
 
             eva_bus_t.axi_r[eva_bus_t.arid].addr_base  = GEN_DMA_ADDR64( eva_bus_t.araddr_high, eva_bus_t.araddr_low);
@@ -230,7 +279,7 @@ void eva_axi_rd_func_o( svBit             *arready,
             eva_bus_t.axi_cur_rlock = rand()%10;
     
 #ifdef EVA_AXI_DEBUG
-            fprintf(stderr," @AXI [R] ID[%d] - addr: 0x%llx  length: %d - burst: %d  size: %d\n",
+            eva_msg(" @AXI [R] ID[%d] - addr: 0x%llx  length: %d - burst: %d  size: %d\n",
                     eva_bus_t.arid,
                     eva_bus_t.axi_r[eva_bus_t.arid].addr_base,
                     eva_bus_t.axi_r[eva_bus_t.arid].length,
@@ -281,31 +330,36 @@ void eva_axi_rd_func_o( svBit             *arready,
             *rvalid = (rand()%16) < 4; 
       
             if(*rvalid){
-                eva_bus_t.eva_t->axi_r_addr = eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr;
+                eva_bus_t.eva_t->mst_rd.addr_l = eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr & 0xFFFFFFFF;
+                eva_bus_t.eva_t->mst_rd.addr_u = (eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr >> 32) & 0xFFFFFFFF;
                 if(eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].size == 4)
                     eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr += 16;
                 else if(eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].size == 3)
                     eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].cur_addr += 8;
 
                 barrier();
-                eva_bus_t.eva_t->axi_r_sync = EVA_SYNC;
+                eva_bus_t.eva_t->mst_rd.sync = EVA_SYNC;
                 barrier();
 	
                 timeout = 0;
-                while(eva_bus_t.eva_t->axi_r_sync == EVA_SYNC){
+                while(eva_bus_t.eva_t->mst_rd.sync == EVA_SYNC){
+                    if(timeout%4 == 0){
+                        EVA_UNIT_DELAY;
+                    }
+                    
                     timeout++;
-                    if(timeout > 100000000){ // 1 million
-                        fprintf(stderr," @EVA HDL axi_r_sync timeout , check SYSTEM !\n");
+                    if(timeout > 100000){ 
+                        eva_msg(" @EVA HDL mst_rd.sync timeout , check SYSTEM !\n");
                         return ;
                     }
                 }
 	
-                *rdata_0 = eva_bus_t.eva_t->axi_r_data0;
-                *rdata_1 = eva_bus_t.eva_t->axi_r_data1;
-                *rdata_2 = eva_bus_t.eva_t->axi_r_data2;
-                *rdata_3 = eva_bus_t.eva_t->axi_r_data3;
+                *rdata_0 = eva_bus_t.eva_t->mst_rd.data_0;
+                *rdata_1 = eva_bus_t.eva_t->mst_rd.data_1;
+                *rdata_2 = eva_bus_t.eva_t->mst_rd.data_2;
+                *rdata_3 = eva_bus_t.eva_t->mst_rd.data_3;
 
-                *ruser   = (eva_bus_t.eva_t->axi_r_addr >> 4) & 0xF;
+                *ruser   = (eva_bus_t.eva_t->mst_rd.addr_l >> 4) & 0xF;
 
                 if(eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].remain_len > 0)
                     eva_bus_t.axi_r[eva_bus_t.axi_cur_rport].remain_len--;
@@ -325,7 +379,7 @@ void eva_axi_rd_func_o( svBit             *arready,
                 if(eva_bus_t.axi_rcmd_nums > 0)
                     eva_bus_t.axi_rcmd_nums--;
                 else
-                    fprintf(stderr," ERROR @EVA HDL rlast when no read command detected! @%x\n", eva_bus_t.dbg_id);
+                    eva_msg(" ERROR @EVA HDL rlast when no read command detected! @%x\n", eva_bus_t.dbg_id);
 
             }
         }
@@ -409,14 +463,14 @@ void eva_axi_wr_func_o( svBit  *awready,
     
 		if( (eva_bus_t.awburst != 1) //|| (eva_bus_t.awsize != 4) 
             ){
-			fprintf(stderr," @EVA HDL not support parameter detected in AXI write command  burst %x , size %x\n",
+			eva_msg(" @EVA HDL not support parameter detected in AXI write command  burst %x , size %x\n",
 					eva_bus_t.awburst, eva_bus_t.awsize );
 
 			//eva_bus_t.axi_w[eva_bus_t.awid].burst      = 1;  // INCR
 			//eva_bus_t.axi_w[eva_bus_t.awid].size       = 4;  // 16bytes
 			return ;
 		}else if(eva_bus_t.axi_w[eva_bus_t.awid].valid){
-			//fprintf(stderr," @EVA HDL detected repeat ID [%d] in AXI write command \n", eva_bus_t.arid );
+			//eva_msg(" @EVA HDL detected repeat ID [%d] in AXI write command \n", eva_bus_t.arid );
             fake_new = 1;
 		}else if(!eva_bus_t.axi_w[eva_bus_t.awid].valid){
 
@@ -431,7 +485,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 			eva_bus_t.axi_cur_wlock = rand()%3;
     
 #ifdef EVA_AXI_DEBUG
-            fprintf(stderr," @AXI [W] ID[%d] - addr: 0x%llx  length: %d - burst: %d  size: %d\n",
+            eva_msg(" @AXI [W] ID[%d] - addr: 0x%llx  length: %d - burst: %d  size: %d\n",
                     eva_bus_t.awid,
                     eva_bus_t.axi_w[eva_bus_t.awid].addr_base,
                     eva_bus_t.axi_w[eva_bus_t.awid].length,
@@ -471,27 +525,32 @@ void eva_axi_wr_func_o( svBit  *awready,
 	if(eva_bus_t.axi_cur_wactive && eva_bus_t.wvalid && eva_bus_t.wready_pre){
 
       
-		eva_bus_t.eva_t->axi_w_addr = eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr;
+		eva_bus_t.eva_t->mst_wr.addr_l = eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr & 0xFFFFFFFF;
+		eva_bus_t.eva_t->mst_wr.addr_u = (eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr >> 32) & 0xFFFFFFFF;
         if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].size == 4)
             eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr += 16;
         else if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].size == 3)
             eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].cur_addr += 8;
     
-		eva_bus_t.eva_t->axi_w_strb  = eva_bus_t.wstrb;
-		eva_bus_t.eva_t->axi_w_data0 = eva_bus_t.wdata_0;
-		eva_bus_t.eva_t->axi_w_data1 = eva_bus_t.wdata_1;
-		eva_bus_t.eva_t->axi_w_data2 = eva_bus_t.wdata_2;
-		eva_bus_t.eva_t->axi_w_data3 = eva_bus_t.wdata_3;
+		eva_bus_t.eva_t->mst_wr.strb   = eva_bus_t.wstrb;
+		eva_bus_t.eva_t->mst_wr.data_0 = eva_bus_t.wdata_0;
+		eva_bus_t.eva_t->mst_wr.data_1 = eva_bus_t.wdata_1;
+		eva_bus_t.eva_t->mst_wr.data_2 = eva_bus_t.wdata_2;
+		eva_bus_t.eva_t->mst_wr.data_3 = eva_bus_t.wdata_3;
 
 		barrier();
-		eva_bus_t.eva_t->axi_w_sync = EVA_SYNC;
+		eva_bus_t.eva_t->mst_wr.sync = EVA_SYNC;
 		barrier();
 
 		timeout = 0;
-		while(eva_bus_t.eva_t->axi_w_sync == EVA_SYNC){
+		while(eva_bus_t.eva_t->mst_wr.sync == EVA_SYNC){
+            if(timeout%4 == 0){
+                EVA_UNIT_DELAY;
+            }
+            
 			timeout++;
-			if(timeout > 100000000){ // 1 million
-				fprintf(stderr," @EVA HDL axi_w_sync timeout , check SYSTEM !\n");
+			if(timeout > 100000){ 
+				eva_msg(" @EVA HDL mst_wr.sync timeout , check SYSTEM !\n");
 				return ;
 			}
 		}
@@ -502,7 +561,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 
 		if(eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].remain_len == 0){
 			if( !eva_bus_t.wlast )
-				fprintf(stderr," ERROR @EVA HDL wlast not detected in a write burst last! @%x\n", eva_bus_t.dbg_id);
+				eva_msg(" ERROR @EVA HDL wlast not detected in a write burst last! @%x\n", eva_bus_t.dbg_id);
 
 			eva_bus_t.axi_w[eva_bus_t.axi_cur_wport].valid = 0;
 			eva_bus_t.axi_cur_wactive = 0;
@@ -510,7 +569,7 @@ void eva_axi_wr_func_o( svBit  *awready,
 			if(eva_bus_t.axi_wcmd_nums > 0)
 				eva_bus_t.axi_wcmd_nums--;
 			else
-				fprintf(stderr," ERROR @EVA HDL wlast when no write command detected! @%x\n", eva_bus_t.dbg_id);
+				eva_msg(" ERROR @EVA HDL wlast when no write command detected! @%x\n", eva_bus_t.dbg_id);
 		}
 
 	}
@@ -541,8 +600,8 @@ void eva_axi_wr_func_o( svBit  *awready,
 
 void eva_hdl_intr( const svBitVecVal *intr ){
     uint32_t intr_s = *intr & 0xFFFFFFFF;
-    if( (intr_s & eva_bus_t.eva_t->intr) == 0 )
-        eva_bus_t.eva_t->intr = intr_s;
+    if( (intr_s & eva_bus_t.eva_t->intx.intx) == 0 )
+        eva_bus_t.eva_t->intx.intx = intr_s;
 }
 
 int evaScopeGet(char *path){
@@ -552,18 +611,20 @@ int evaScopeGet(char *path){
     net = vpi_handle_by_name(path, NULL);
 
     if( net == NULL){
-        fprintf(stderr,"@evaScopeGet: %s  not exist !\n", path);
+        eva_msg(" %s  not exist !\n", path);
         return 0;
     }
 
     int Vector_size = vpi_get(vpiSize, net);
 
     if(Vector_size > 32){
-        fprintf(stderr,"@evaScopeGet: %s vector size %d > 32 not support !\n", path, Vector_size);
+        eva_msg(" %s vector size %d > 32 not support !\n", path, Vector_size);
         return 0;
     }{
         val.format = vpiIntVal;
         vpi_get_value(net, & val);
+
+        eva_msg(" Get %s : %d \n", path, val.value.integer);
 
         return val.value.integer;
     }
@@ -571,11 +632,46 @@ int evaScopeGet(char *path){
 }
 
 void evaScopeGetHandle(){
-    // do Get Process
-    if( eva_bus_t.eva_t->get == EVA_GET_SYNC_REQ ){
-        eva_bus_t.eva_t->getValue = evaScopeGet( eva_bus_t.eva_t->str );
-        eva_bus_t.eva_t->get = EVA_GET_SYNC_ACK;
-    }
+    char str[512];
+    int  pos = 0;
+
+    do{
+        switch(eva_bus_t.eva_t->get.sync)
+            {
+            case EVA_SOF  : {
+                eva_bus_t.eva_t->get.sync = EVA_ACK;
+                break;
+            }
+            case EVA_SEND_A : {
+                memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
+                pos += 32;
+                barrier();
+                
+                eva_bus_t.eva_t->get.sync = EVA_ACK_A;
+                break;
+            }
+            case EVA_SEND_B : {
+                memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
+                pos += 32;
+                barrier();
+
+                eva_bus_t.eva_t->get.sync = EVA_ACK_B;
+                break;
+            }
+            case EVA_EOF : {
+                // do Get Process
+                *(int *)eva_bus_t.eva_t->get.str = evaScopeGet( str );
+
+                barrier();
+                eva_bus_t.eva_t->get.sync = EVA_ROK;
+                break;
+            }
+            }
+        
+        EVA_UNIT_DELAY;
+        
+    }while( eva_bus_t.eva_t->sync.dut != EVA_IDLE);
+
 
 }
 

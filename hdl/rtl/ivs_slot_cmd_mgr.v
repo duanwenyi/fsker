@@ -1,13 +1,32 @@
 
 module IVS_SLOT_CMD_MGR(/*autoarg*/
     // Outputs
-    dma_cmd_fetch_req, dma_rdata_rdy, dma_ar_len, dma_ar_base,
-    dma_cmd_resp, frm_mode, frm_format, frm_line_stride, frm_width,
-    frm_height, frm_x_step, frm_y_step, frm_x_stride, frm_y_stride,
-    frm_i_base, frm_o_base,
+    dma_cmd_fetch_req,
+    dma_rdata_rdy,
+    dma_ar_len,
+    dma_ar_base,
+    dma_cmd_resp,
+    frm_mode,
+    frm_format,
+    frm_line_stride,
+    frm_width,
+    frm_height,
+    frm_x_steps,
+    frm_y_steps,
+    frm_x_stride,
+    frm_y_stride,
+    frm_i_base,
+    frm_o_base,
     // Inputs
-    clk, rst_n, dma_cmd_base, slot_fetch_en, slot_sel_dec, dma_ar_rdy,
-    dma_rdata_vld, dma_rdata_last, dma_rdata
+    clk,
+    rst_n,
+    dma_cmd_base,
+    slot_fetch_en,
+    slot_sel_dec,
+    dma_ar_rdy,
+    dma_rdata_vld,
+    dma_rdata_last,
+    dma_rdata
     );
 
     parameter  IDLE      = 0;
@@ -41,8 +60,8 @@ module IVS_SLOT_CMD_MGR(/*autoarg*/
     output [15:0]       frm_line_stride;
     output [15:0]       frm_width;
     output [15:0]       frm_height;
-    output [15:0]       frm_x_step;
-    output [15:0]       frm_y_step;
+    output [15:0]       frm_x_steps;
+    output [15:0]       frm_y_steps;
 
     output [15:0]       frm_x_stride;
     output [15:0]       frm_y_stride;
@@ -132,7 +151,7 @@ module IVS_SLOT_CMD_MGR(/*autoarg*/
     assign frm_line_stride        = slot_cmd_cfg0[31:15];
 
     assign {frm_height, frm_width}  = slot_cmd_cfg1;
-    assign {frm_y_step, frm_x_step} = slot_cmd_cfg2;
+    assign {frm_y_steps, frm_x_steps} = slot_cmd_cfg2;
 
     assign frm_i_base = slot_cmd_cfg3;
     assign frm_o_base = slot_cmd_cfg4;

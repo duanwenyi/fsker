@@ -1,6 +1,7 @@
 #include <string.h>
 #include "eva.h"
 
+
 void *eva_map(int do_init){
     void *shm = NULL;  
     key_t key = ftok(".", 1); 
@@ -8,7 +9,7 @@ void *eva_map(int do_init){
     int   shmid = shmget(key, sizeof(EVA_BUS_ST_t), 0666|IPC_CREAT);  
     if(shmid == -1)  
         {  
-            fprintf(stderr, "shmget failed\n");  
+            eva_msg("shmget failed\n");  
             exit(EXIT_FAILURE);  
         }  
 
@@ -16,19 +17,15 @@ void *eva_map(int do_init){
 
     if(shm == (void*)-1)  
         {  
-            fprintf(stderr, "shmat failed\n");  
+            eva_msg("shmat failed\n");  
             exit(EXIT_FAILURE);  
         }  
-    fprintf(stderr, " @EVA -> @key 0x%x\n",key);  
+    eva_msg("generate key: [0x%x]\n",key);  
 
     if(do_init){
         bus = (EVA_BUS_ST_t *)shm;
 
         memset(bus, 0, sizeof(EVA_BUS_ST_t));
-
-        bus->ahb_sync   = EVA_SYNC_ACK;
-        bus->axi_w_sync = EVA_SYNC_ACK;
-        bus->axi_r_sync = EVA_SYNC_ACK;
     }
 
     return shm;
@@ -37,7 +34,7 @@ void *eva_map(int do_init){
 void eva_unmap(void *map){
     if(shmdt(map) == -1)  
         {  
-            fprintf(stderr, "shmdt failed\n");  
+            eva_msg("shmdt failed\n");  
             exit(EXIT_FAILURE);  
         }  
 }
@@ -49,7 +46,7 @@ void eva_destory(){
     int   shmid = shmget(key, sizeof(EVA_BUS_ST_t), 0666|IPC_CREAT);  
     if(shmid == -1)  
         {  
-            fprintf(stderr, "shmget failed\n");  
+            eva_msg("shmget failed\n");  
             exit(EXIT_FAILURE);  
         }  
 
@@ -57,24 +54,24 @@ void eva_destory(){
   
     if(shm == (void*)-1)  
         {  
-            fprintf(stderr, "shmat failed\n");  
+            eva_msg("shmat failed\n");  
             exit(EXIT_FAILURE);  
         }  
 
     if(shmdt(shm) == -1)  
         {  
-            fprintf(stderr, "shmdt failed\n");  
+            eva_msg("shmdt failed\n");  
             exit(EXIT_FAILURE);  
         }  
 
     //删除共享内存  
     if(shmctl(shmid, IPC_RMID, 0) == -1)  
         {  
-            fprintf(stderr, "shmctl(IPC_RMID) failed\n");  
+            eva_msg("shmctl(IPC_RMID) failed\n");  
             exit(EXIT_FAILURE);  
         }  
 
-    fprintf(stderr, " @EVA Destory @key %x\n",key);  
+    eva_msg("Destory key : [%x]\n",key);  
     exit(EXIT_SUCCESS);  
 }
 

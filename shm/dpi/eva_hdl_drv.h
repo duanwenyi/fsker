@@ -11,7 +11,6 @@
 #define EVA_AXI_MAX_OUTSTANDING 16
 #define EVA_AXI_MAX_PORT 64
 
-#define GEN_DMA_ADDR64(high, low) ( ( (uint64_t)(high) <<32 ) | (low))
 
 // AXI Port Cell
 typedef struct AXI_PCELL{
@@ -27,6 +26,16 @@ typedef struct AXI_PCELL{
 }AXI_PCELL_t;
 
 typedef struct EVA_HDL{
+    uint8_t haw;          // Slave Address Width
+    uint8_t hdw;          // Slave Data Width
+    uint8_t type;         // Slave Type : 0:AHB  1:APB 2:AXI
+    uint8_t rsv;          // 
+    
+    uint8_t mwaw;         // Master(AXI) Write Address Width
+    uint8_t mwdw;         // Master(AXI) Write Data Width
+    uint8_t mraw;         // Master(AXI) Read Address Width
+    uint8_t mrdw;         // Master(AXI) Read Data Width
+
     uint32_t axi_wcmd_nums;
     uint32_t axi_rcmd_nums;
     uint32_t axi_cur_wactive;
@@ -52,6 +61,7 @@ typedef struct EVA_HDL{
     uint32_t hready;
     uint32_t hresp;
     uint32_t hrdata;
+    uint32_t hrdata_u;
 
     // AXI read
     uint32_t arvalid;
@@ -103,20 +113,33 @@ typedef struct EVA_HDL{
 extern "C" {
 #endif
 
-    void eva_hdl_init();
+    void eva_hdl_init( const svBit en_slv,
+                       const svBitVecVal *slv_cfg,
+                       
+                       const svBit en_mst,
+                       const svBitVecVal *mst_cfg,
+                       
+                       const svBit en_int,
+                       const svBit en_get
+                   );
+
     void eva_hdl_alive( svBit *stop,
                         svBit *error
                         );
 
     void eva_ahb_bus_func_i( const svBit        hready,
                              const svBitVecVal *hresp,
-                             const svBitVecVal *hrdata
+                             const svBitVecVal *hrdata,
+                             const svBitVecVal *hrdata_u
                              );
 
     void eva_ahb_bus_func_o( svBitVecVal *htrans,
                              svBit       *hwrite,
+                             svBitVecVal *hsize,
                              svBitVecVal *haddr,
-                             svBitVecVal *hwdata
+                             svBitVecVal *haddr_u,
+                             svBitVecVal *hwdata,
+                             svBitVecVal *hwdata_u
                              );
 
     void eva_axi_rd_func_i( const svBit        arvalid,

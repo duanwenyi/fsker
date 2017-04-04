@@ -10,6 +10,8 @@ pthread_t eva_monitor;
 #define EVA_SAFE_MODE
 #define EVA_AXI_DEBUG
 
+#define EVA_AHB_DEBUG
+
 //#define EVA_AXI_ADDR_CHECK_R
 #define EVA_AXI_ADDR_CHECK_W
 
@@ -21,38 +23,55 @@ EVA_MEM_MAG_t eva_mem_mag;
 
 void eva_cpu_wr(uint32_t addr, uint32_t data){
 #ifdef EVA_SAFE_MODE
-	while(eva_t->ahb_sync != EVA_SYNC_ACK){
+	while(eva_t->slv.sync != EVA_SYNC_ACK){
 		EVA_UNIT_DELAY;
 	}
 #endif
-	eva_t->ahb_write = 1;
-	eva_t->ahb_addr  = addr;
-	eva_t->ahb_data  = data;
-	barrier();
-	eva_t->ahb_sync  = EVA_SYNC;
 
-	while(eva_t->ahb_sync == EVA_SYNC){
+#ifdef EVA_AHB_DEBUG
+    eva_msg("%8x -- %8x\n", addr, data);
+#endif
+
+	eva_t->slv.write = 1;
+	eva_t->slv.addr_l  = addr;
+	eva_t->slv.addr_u  = 0;
+	eva_t->slv.data_l  = data;
+	eva_t->slv.data_u  = 0;
+	barrier();
+	eva_t->slv.sync  = EVA_SYNC;
+
+	while(eva_t->slv.sync == EVA_SYNC){
 		EVA_UNIT_DELAY;
 	}
+
+#ifdef EVA_AHB_DEBUG
+    eva_msg("%8x -- %8x -- over\n", addr, data);
+#endif
 }
 
 
 uint32_t eva_cpu_rd(uint32_t addr){
 #ifdef EVA_SAFE_MODE
-	while(eva_t->ahb_sync != EVA_SYNC_ACK){
+	while(eva_t->slv.sync != EVA_SYNC_ACK){
 		EVA_UNIT_DELAY;
 	}
 #endif
-	eva_t->ahb_write = 0;
-	eva_t->ahb_addr  = addr;
-	barrier();
-	eva_t->ahb_sync  = EVA_SYNC;
 
-	while(eva_t->ahb_sync == EVA_SYNC){
+	eva_t->slv.write = 0;
+	eva_t->slv.addr_l  = addr;
+	eva_t->slv.addr_u  = 0;
+	barrier();
+	eva_t->slv.sync  = EVA_SYNC;
+
+	while(eva_t->slv.sync == EVA_SYNC){
 		EVA_UNIT_DELAY;
 	}
   
-	return eva_t->ahb_data;
+#ifdef EVA_AHB_DEBUG
+    eva_msg("%8x -- %8x\n", addr, eva_t->slv.data_l);
+#endif
+
+	return eva_t->slv.data_l;
 }
 
 #ifdef __cplusplus
@@ -74,6 +93,7 @@ void eva_monitor_handler(void){
     
     char     rota[4] = {'-','\\','|','/'};
 
+    eva_msg(" created !\n");
     while(1){
 		
         pre_tick = eva_t->tick;
@@ -100,7 +120,7 @@ void eva_monitor_handler(void){
         if(eva_rate ==0){
             die_cnt++;
             if(die_cnt > 30){
-                fprintf(stderr, "\n @EVA Monitor: Simulator seem to be dead! Killing self ...\n");
+                eva_msg( " Simulator seem to be dead! Killing self ...\n");
                 usleep(200);
                 exit(0);
             }
@@ -108,7 +128,7 @@ void eva_monitor_handler(void){
             die_cnt = 0;
         }
 
-        fprintf(stderr, " @EVA Monitor: %llu S (%c) HDL: %llu (CYCLE/S) [MAX/MIN][%llu / %llu] CYCLE/S\r",
+        eva_msg( " %llu S (%c) HDL: %llu (CYCLE/S) [MAX/MIN][%llu / %llu] CYCLE/S\r",
                 local_time, rota[local_time%4], eva_rate, max_rate,  min_rate);  
 
         initial = 0;
@@ -121,34 +141,35 @@ void *eva_axi_rd_handler(void *){
 #else
 void eva_axi_rd_handler(void){
 #endif
-  
 	uint32_t *ptr;
+    eva_msg(" created !\n");
 	while(1){
-		if(eva_t->axi_r_sync == EVA_SYNC){
+		if(eva_t->mst_rd.sync == EVA_SYNC){
+			uint64_t mst_raddr = GEN_DMA_ADDR64(eva_t->mst_rd.addr_u,eva_t->mst_rd.addr_l);
 #ifdef EVA_AXI_ADDR_CHECK_R
-            if( eva_mem_access_check_read(eva_t->axi_r_addr, 16) )
+            if( eva_mem_access_check_read(mst_raddr, 16) )
                 eva_t->control = EVA_BUS_ERROR;
 #endif
-			ptr = (uint32_t *)eva_t->axi_r_addr;
-			eva_t->axi_r_data0 = *ptr;
+			ptr = (uint32_t *)mst_raddr;
+			eva_t->mst_rd.data_0 = *ptr;
 			ptr++;
-			eva_t->axi_r_data1 = *ptr;
+			eva_t->mst_rd.data_1 = *ptr;
 			ptr++;
-			eva_t->axi_r_data2 = *ptr;
+			eva_t->mst_rd.data_2 = *ptr;
 			ptr++;
-			eva_t->axi_r_data3 = *ptr;
+			eva_t->mst_rd.data_3 = *ptr;
 
 #ifdef EVA_AXI_DEBUG
-	fprintf(stderr," @AXI [R] [ 0x%16llx - %08x %08x %08x %08x ] \n",
-			eva_t->axi_r_addr,
-			eva_t->axi_r_data3,
-			eva_t->axi_r_data2,
-			eva_t->axi_r_data1,
-			eva_t->axi_r_data0
+	eva_msg(" @AXI [R] [ 0x%llu - %08x %08x %08x %08x ] \n",
+			mst_raddr,
+			eva_t->mst_rd.data_3,
+			eva_t->mst_rd.data_2,
+			eva_t->mst_rd.data_1,
+			eva_t->mst_rd.data_0
 			);
 #endif
 			barrier();
-			eva_t->axi_r_sync = EVA_SYNC_ACK;
+			eva_t->mst_rd.sync = EVA_SYNC_ACK;
 		}else{
 			EVA_UNIT_DELAY;
 		}
@@ -165,33 +186,36 @@ void *eva_axi_wr_handler(void *){
 void eva_axi_wr_handler(void){
 #endif  
     int error;
+    eva_msg(" created !\n");
 	while(1){
         error = 0;
-		if(eva_t->axi_w_sync == EVA_SYNC){
+		if(eva_t->mst_wr.sync == EVA_SYNC){
+			uint64_t mst_waddr = GEN_DMA_ADDR64(eva_t->mst_wr.addr_u,eva_t->mst_wr.addr_l);
 #ifdef EVA_AXI_DEBUG
-            fprintf(stderr," @AXI [W] [ 0x%16llx - %08x %08x %08x %08x ] - strob: 0x%x \n",
-					eva_t->axi_w_addr, 
-					eva_t->axi_w_data3,
-					eva_t->axi_w_data2,
-					eva_t->axi_w_data1,
-					eva_t->axi_w_data0, eva_t->axi_w_strb
+            eva_msg(" @AXI [W] [ 0x%llu - %08x %08x %08x %08x ] - strob: 0x%x \n",
+					mst_waddr, 
+					eva_t->mst_wr.data_3,
+					eva_t->mst_wr.data_2,
+					eva_t->mst_wr.data_1,
+					eva_t->mst_wr.data_0, eva_t->mst_wr.strb
 					);
 
 #endif
-            uint32_t * ptr32 = (uint32_t *)eva_t->axi_w_addr;
-            uint8_t *  ptr8  = (uint8_t * )eva_t->axi_w_addr;
+
+            uint32_t * ptr32 = (uint32_t *)mst_waddr;
+            uint8_t *  ptr8  = (uint8_t * )mst_waddr;
 
 #ifdef EVA_AXI_ADDR_CHECK_W
-            if(eva_t->axi_w_strb == 0xFFFF){
-                error =  eva_mem_access_check_write(eva_t->axi_w_addr, 16);
+            if(eva_t->mst_wr.strb == 0xFFFF){
+                error =  eva_mem_access_check_write(mst_waddr, 16);
 
-            }else if(eva_t->axi_w_strb == 0xFF){
-                error = eva_mem_access_check_write(eva_t->axi_w_addr, 8);
+            }else if(eva_t->mst_wr.strb == 0xFF){
+                error = eva_mem_access_check_write(mst_waddr, 8);
             }else{
                 uint32_t header_ofst = 0;
                 uint32_t bits_sum    = 16;
                 while( header_ofst  < 16 ){
-                    if(eva_t->axi_w_strb & (1 << header_ofst)){
+                    if(eva_t->mst_wr.strb & (1 << header_ofst)){
                         break;
                     }else{
                         bits_sum--;
@@ -202,7 +226,7 @@ void eva_axi_wr_handler(void){
                 int cc = 15;
                 if(bits_sum > 0 ){
                     while( cc > 0 ){
-                        if(eva_t->axi_w_strb & (1 << cc)){
+                        if(eva_t->mst_wr.strb & (1 << cc)){
                             break;
                         }else{
                             bits_sum--;
@@ -212,72 +236,72 @@ void eva_axi_wr_handler(void){
                 }
                 
                 if(bits_sum > 0)
-                    error = eva_mem_access_check_write(eva_t->axi_w_addr + header_ofst, bits_sum);
+                    error = eva_mem_access_check_write(mst_waddr + header_ofst, bits_sum);
             }
 
             if(error){
-                fprintf(stderr," @AXI [W] overflow detected !\n");
-                eva_t->control = EVA_BUS_ERROR;
+                eva_msg(" @AXI [W] overflow detected !\n");
+                eva_t->sync.sw = EVA_ERR;
             }else{
 #endif
 
-                if( (eva_t->axi_w_strb & 0xF) == 0xF){
-                    ptr32[0] = eva_t->axi_w_data0;
-                }else if( (eva_t->axi_w_strb & 0xF) != 0x0){
-                    if( eva_t->axi_w_strb & 0x1 )
-                        ptr8[0] = eva_t->axi_w_data0 & 0xF;
-                    if( eva_t->axi_w_strb & 0x2 )
-                        ptr8[1] = (eva_t->axi_w_data0 >> 8) & 0xF;
-                    if( eva_t->axi_w_strb & 0x4 )
-                        ptr8[1] = (eva_t->axi_w_data0 >> 16) & 0xF;
-                    if( eva_t->axi_w_strb & 0x8 )
-                        ptr8[3] = (eva_t->axi_w_data0 >> 24) & 0xF;
+                if( (eva_t->mst_wr.strb & 0xF) == 0xF){
+                    ptr32[0] = eva_t->mst_wr.data_0;
+                }else if( (eva_t->mst_wr.strb & 0xF) != 0x0){
+                    if( eva_t->mst_wr.strb & 0x1 )
+                        ptr8[0] = eva_t->mst_wr.data_0 & 0xF;
+                    if( eva_t->mst_wr.strb & 0x2 )
+                        ptr8[1] = (eva_t->mst_wr.data_0 >> 8) & 0xF;
+                    if( eva_t->mst_wr.strb & 0x4 )
+                        ptr8[1] = (eva_t->mst_wr.data_0 >> 16) & 0xF;
+                    if( eva_t->mst_wr.strb & 0x8 )
+                        ptr8[3] = (eva_t->mst_wr.data_0 >> 24) & 0xF;
                 }
 
-                if( (eva_t->axi_w_strb & 0xF0) == 0xF0){
-                    ptr32[1] = eva_t->axi_w_data1;
-                }else if( (eva_t->axi_w_strb & 0xF0) != 0x0){
-                    if( eva_t->axi_w_strb & 0x10 )
-                        ptr8[4+0] = eva_t->axi_w_data1 & 0xF;
-                    if( eva_t->axi_w_strb & 0x20 )
-                        ptr8[4+1] = (eva_t->axi_w_data1 >> 8) & 0xF;
-                    if( eva_t->axi_w_strb & 0x40 )
-                        ptr8[4+1] = (eva_t->axi_w_data1 >> 16) & 0xF;
-                    if( eva_t->axi_w_strb & 0x80 )
-                        ptr8[4+3] = (eva_t->axi_w_data1 >> 24) & 0xF;
+                if( (eva_t->mst_wr.strb & 0xF0) == 0xF0){
+                    ptr32[1] = eva_t->mst_wr.data_1;
+                }else if( (eva_t->mst_wr.strb & 0xF0) != 0x0){
+                    if( eva_t->mst_wr.strb & 0x10 )
+                        ptr8[4+0] = eva_t->mst_wr.data_1 & 0xF;
+                    if( eva_t->mst_wr.strb & 0x20 )
+                        ptr8[4+1] = (eva_t->mst_wr.data_1 >> 8) & 0xF;
+                    if( eva_t->mst_wr.strb & 0x40 )
+                        ptr8[4+1] = (eva_t->mst_wr.data_1 >> 16) & 0xF;
+                    if( eva_t->mst_wr.strb & 0x80 )
+                        ptr8[4+3] = (eva_t->mst_wr.data_1 >> 24) & 0xF;
                 }
 
-                if( (eva_t->axi_w_strb & 0xF00) == 0xF00){
-                    ptr32[2] = eva_t->axi_w_data2;
-                }else if( (eva_t->axi_w_strb & 0xF00) != 0x0){
-                    if( eva_t->axi_w_strb & 0x100 )
-                        ptr8[8+0] = eva_t->axi_w_data2 & 0xF;
-                    if( eva_t->axi_w_strb & 0x200 )
-                        ptr8[8+1] = (eva_t->axi_w_data2 >> 8) & 0xF;
-                    if( eva_t->axi_w_strb & 0x400 )
-                        ptr8[8+1] = (eva_t->axi_w_data2 >> 16) & 0xF;
-                    if( eva_t->axi_w_strb & 0x800 )
-                        ptr8[8+3] = (eva_t->axi_w_data2 >> 24) & 0xF;
+                if( (eva_t->mst_wr.strb & 0xF00) == 0xF00){
+                    ptr32[2] = eva_t->mst_wr.data_2;
+                }else if( (eva_t->mst_wr.strb & 0xF00) != 0x0){
+                    if( eva_t->mst_wr.strb & 0x100 )
+                        ptr8[8+0] = eva_t->mst_wr.data_2 & 0xF;
+                    if( eva_t->mst_wr.strb & 0x200 )
+                        ptr8[8+1] = (eva_t->mst_wr.data_2 >> 8) & 0xF;
+                    if( eva_t->mst_wr.strb & 0x400 )
+                        ptr8[8+1] = (eva_t->mst_wr.data_2 >> 16) & 0xF;
+                    if( eva_t->mst_wr.strb & 0x800 )
+                        ptr8[8+3] = (eva_t->mst_wr.data_2 >> 24) & 0xF;
                 }
 
-                if( (eva_t->axi_w_strb & 0xF000) == 0xF000){
-                    ptr32[3] = eva_t->axi_w_data3;
-                }else if( (eva_t->axi_w_strb & 0xF000) != 0x0){
-                    if( eva_t->axi_w_strb & 0x1000 )
-                        ptr8[12+0] = eva_t->axi_w_data3 & 0xF;
-                    if( eva_t->axi_w_strb & 0x2000 )
-                        ptr8[12+1] = (eva_t->axi_w_data3 >> 8) & 0xF;
-                    if( eva_t->axi_w_strb & 0x4000 )
-                        ptr8[12+1] = (eva_t->axi_w_data3 >> 16) & 0xF;
-                    if( eva_t->axi_w_strb & 0x8000 )
-                        ptr8[12+3] = (eva_t->axi_w_data3 >> 24) & 0xF;
+                if( (eva_t->mst_wr.strb & 0xF000) == 0xF000){
+                    ptr32[3] = eva_t->mst_wr.data_3;
+                }else if( (eva_t->mst_wr.strb & 0xF000) != 0x0){
+                    if( eva_t->mst_wr.strb & 0x1000 )
+                        ptr8[12+0] = eva_t->mst_wr.data_3 & 0xF;
+                    if( eva_t->mst_wr.strb & 0x2000 )
+                        ptr8[12+1] = (eva_t->mst_wr.data_3 >> 8) & 0xF;
+                    if( eva_t->mst_wr.strb & 0x4000 )
+                        ptr8[12+1] = (eva_t->mst_wr.data_3 >> 16) & 0xF;
+                    if( eva_t->mst_wr.strb & 0x8000 )
+                        ptr8[12+3] = (eva_t->mst_wr.data_3 >> 24) & 0xF;
                 }
 
 #ifdef EVA_AXI_ADDR_CHECK_W
             }
 #endif
 			barrier();
-			eva_t->axi_w_sync = EVA_SYNC_ACK;
+			eva_t->mst_wr.sync = EVA_SYNC_ACK;
 		}else{
 			EVA_UNIT_DELAY;
 		}
@@ -293,18 +317,18 @@ void *eva_interrupt_handler(void *){
 #else
 void eva_interrupt_handler(void){
 #endif
-
 	int  cc = 0;
+    eva_msg(" created !\n");
 	while(1){
-		if( (intr_reg.valid_bits != 0) && (eva_t->intr != 0)){
-			fprintf(stderr, " @EVA recieved interrupt : 0x%8x    [Local Mask: 0x%8x]\n", eva_t->intr, intr_reg.valid_bits ); 
+		if( (intr_reg.valid_bits != 0) && (eva_t->intx.intx != 0)){
+			eva_msg( " @EVA recieved interrupt : 0x%8x    [Local Mask: 0x%8x]\n", eva_t->intx.intx, intr_reg.valid_bits ); 
 			for( cc=0; cc<EVA_MAX_INT_NUM; cc++){
 				if( intr_reg.valid[cc] == 1){
-					if( (eva_t->intr & (1<<cc)) != 0 ){
+					if( (eva_t->intx.intx & (1<<cc)) != 0 ){
 						// excute registered interrupt function
 						(*intr_reg.func[cc])();
 	    
-						eva_t->intr = eva_t->intr & (~(1<<cc));
+						eva_t->intx.intx = eva_t->intx.intx & (~(1<<cc));
 					}
 				}
 			}
@@ -324,12 +348,12 @@ void eva_interrupt_handler(void){
 			 intr_reg.func[intr_id]  = user_func;
 			 intr_reg.valid[intr_id] = 1;
 			 intr_reg.valid_bits |= (1<< intr_id);
-			 fprintf(stderr, " @EVA intrrupt register [ID: %d] [BASE: 0x%llx] is register OK. [0x%x]\n", intr_id, (uint64_t)user_func, intr_reg.valid_bits); 
+			 eva_msg( " @EVA intrrupt register [ID: %d] [BASE: 0x%llx] is register OK. [0x%x]\n", intr_id, (uint64_t)user_func, intr_reg.valid_bits); 
 		 }else{
-			 fprintf(stderr, " @EVA intrrupt register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
+			 eva_msg( " @EVA intrrupt register : [ID]:%d have been registered , please choose other ID.\n", intr_id); 
 		 }
 	 }else{
-		 fprintf(stderr, " @EVA intrrupt register : [ID]:%d exceed MAX support numbers [%d].\n", intr_id, EVA_MAX_INT_NUM); 
+		 eva_msg( " @EVA intrrupt register : [ID]:%d exceed MAX support numbers [%d].\n", intr_id, EVA_MAX_INT_NUM); 
 	 }
  }
 
@@ -339,151 +363,217 @@ void eva_interrupt_handler(void){
 		 intr_reg.func[intr_id]  = NULL;
 		 intr_reg.valid[intr_id] = 0;
 		 intr_reg.valid_bits &= ~(1<< intr_id);
-		 fprintf(stderr, " @EVA intrrupt unregister [ID]:%d . [0x%x]\n", intr_id, intr_reg.valid_bits); 
+		 eva_msg( " @EVA intrrupt unregister [ID]:%d . [0x%x]\n", intr_id, intr_reg.valid_bits); 
 	 }else{
-		 fprintf(stderr, " @EVA intrrupt unregister : [ID]:%d exceed MAX support numbers [%d].\n", intr_id, EVA_MAX_INT_NUM); 
+		 eva_msg( " @EVA intrrupt unregister : [ID]:%d exceed MAX support numbers [%d].\n", intr_id, EVA_MAX_INT_NUM); 
 	 }
  }
 
 void eva_drv_init(){
 	int ret;
+    int en_slv = 0;
+    int en_mst = 0;
+    int en_int = 0;
+    int en_get = 0;
+
 	memset(&intr_reg, 0, sizeof(EVA_INTR_REG_t));
     eva_mem_init();
 
 	eva_t = (EVA_BUS_ST_t *)eva_map(0);
-	if( eva_t->control != EVA_BUS_INIT){
-		fprintf(stderr, " @EVA HDL is not detected start first , waiting ....\n");  
-		while(eva_t->control != EVA_BUS_INIT ){
-			EVA_UNIT_DELAY;
-		}
-		//exit(EXIT_FAILURE);  
-	}
-  
-	eva_t->control = EVA_BUS_ACK;
 
-	while(eva_t->control == EVA_BUS_ACK ){
-		EVA_UNIT_DELAY;
-	}
-  
-	if( eva_t->control != EVA_BUS_ALIVE){
-		fprintf(stderr, " @EVA HDL is not response correct, exit .\n");  
-		exit(EXIT_FAILURE);  
-	}else{
-		fprintf(stderr, " @EVA HDL Handshake Over , set ALIVE OK.\n");  
-	}
+    eva_t->sync.sw = EVA_IDLE;
 
-#ifdef __cplusplus
-	ret = pthread_create(&eva_axi_wr, NULL, eva_axi_wr_handler, NULL);
-	if(ret != 0){
-		fprintf(stderr, " @EVA SW AXI write thread created failed , exit .\n");  
-		exit(EXIT_FAILURE);  
-	}
-  
-	ret = pthread_create(&eva_axi_rd, NULL, eva_axi_rd_handler, NULL);
-	if(ret != 0){
-		fprintf(stderr, " @EVA SW AXI read  thread created failed , exit .\n");  
-		exit(EXIT_FAILURE);  
-	}
+    do{
+        switch(eva_t->sync.dut)
+            {
+            case EVA_INIT  : {
+                barrier();
+                eva_t->sync.sw = EVA_INIT;
+                break;
+            }
+            case EVA_RDY  : {
+                eva_t->mst_wr.data_0;// *slv_cfg;
+                eva_t->mst_wr.data_1;// *mst_cfg;
 
-	ret = pthread_create(&eva_intr, NULL, eva_interrupt_handler, NULL);
-	if(ret != 0){
-		fprintf(stderr, " @EVA SW Interrupt Handle  thread created failed , exit .\n");  
-		exit(EXIT_FAILURE);  
-	}
+                eva_msg( " @EVA AHB Slave set Address %d Bits, Data %d Bits.\n", 
+                         eva_t->mst_wr.data_0 & 0xFF, (eva_t->mst_wr.data_0 >>8) & 0xFF);  
 
-	ret = pthread_create(&eva_monitor, NULL, eva_monitor_handler, NULL);
-	if(ret != 0){
-		fprintf(stderr, " @EVA SW Monitor Handle  thread created failed , exit .\n");  
-		exit(EXIT_FAILURE);  
-	}
-#else
+                eva_msg( " @EVA AXI Write set Address %d Bits, Data %d Bits.\n", 
+                         eva_t->mst_wr.data_1 & 0xFF, (eva_t->mst_wr.data_1 >>8) & 0xFF);  
 
-	ret = pthread_create(&eva_axi_wr, NULL, (void *)eva_axi_wr_handler, NULL);
-	if(ret != 0){
-		fprintf(stderr, " @EVA SW AXI write thread created failed , exit .\n");  
-		exit(EXIT_FAILURE);  
-	}
-  
-	ret = pthread_create(&eva_axi_rd, NULL, (void *)eva_axi_rd_handler, NULL);
-	if(ret != 0){
-		fprintf(stderr, " @EVA SW AXI read  thread created failed , exit .\n");  
-		exit(EXIT_FAILURE);  
-	}
+                eva_msg( " @EVA AXI Read  set Address %d Bits, Data %d Bits.\n", 
+                         (eva_t->mst_wr.data_1>>16) & 0xFF, (eva_t->mst_wr.data_1 >>24) & 0xFF);  
+                
+                en_slv = eva_t->mst_rd.data_0;
+                en_mst = eva_t->mst_rd.data_1;
+                en_int = eva_t->mst_rd.data_2;
+                en_get = eva_t->mst_rd.data_3;
+                
+                eva_msg( " Enable Status : Slave | Master | Interrupt | Get\n");
+                eva_msg( "                 %d     | %d      | %d         | %d\n",
+                         en_slv, 
+                         en_mst, 
+                         en_int, 
+                         en_get );
 
-	ret = pthread_create(&eva_intr, NULL, (void *)eva_interrupt_handler, NULL);
-	if(ret != 0){
-		fprintf(stderr, " @EVA SW Interrupt Handle  thread created failed , exit .\n");  
-		exit(EXIT_FAILURE);  
-	}
+                barrier();
 
-	ret = pthread_create(&eva_monitor, NULL, (void *)eva_monitor_handler, NULL);
-	if(ret != 0){
-		fprintf(stderr, " @EVA SW Monitor Handle  thread created failed , exit .\n");  
-		exit(EXIT_FAILURE);  
-	}
+                eva_t->sync.sw = EVA_RDY;
+                break;
+            }
+            }
+
+        EVA_UNIT_DELAY;
+    }while( eva_t->sync.sw != EVA_RDY);
+
+    eva_msg( " @EVA SW Handshake Over , set ALIVE now.\n");  
+
+    if(en_mst){
+        ret = pthread_create(&eva_axi_wr, NULL, 
+#ifndef __cplusplus
+                             (void *)
 #endif
+                             eva_axi_wr_handler, NULL);
+        if(ret != 0){
+            eva_msg( " @EVA SW AXI write thread created failed , exit .\n");  
+            exit(EXIT_FAILURE);  
+        }
+  
+        ret = pthread_create(&eva_axi_rd, NULL, 
+#ifndef __cplusplus
+                             (void *)
+#endif
+                             eva_axi_rd_handler, NULL);
+        if(ret != 0){
+            eva_msg( " @EVA SW AXI read  thread created failed , exit .\n");  
+            exit(EXIT_FAILURE);  
+        }
+    }
 
-	fprintf(stderr, " @EVA SW initial OVER @0x%llx\n",(size_t)eva_t);  
+    if(en_int){
+        ret = pthread_create(&eva_intr, NULL, 
+#ifndef __cplusplus
+                             (void *)
+#endif
+                             eva_interrupt_handler, NULL);
+        if(ret != 0){
+            eva_msg( " @EVA SW Interrupt Handle  thread created failed , exit .\n");  
+            exit(EXIT_FAILURE);  
+        }
+    }
+
+    if(en_get){
+        
+        ret = pthread_create(&eva_monitor, NULL, 
+#ifndef __cplusplus
+                             (void *)
+#endif
+                             eva_monitor_handler, NULL);
+        if(ret != 0){
+            eva_msg( " @EVA SW Monitor Handle  thread created failed , exit .\n");  
+            exit(EXIT_FAILURE);  
+        }
+    }
+
+	eva_msg( " @EVA SW initial OVER @0x%llx\n",(size_t)eva_t);  
     EVA_TC_INIT();
 }
 
 void eva_drv_stop(){
 
-  if( eva_t->control != EVA_BUS_ALIVE){
-    fprintf(stderr, " @EVA HDL is not alive when stop , exit .\n");  
+  if( eva_t->sync.dut != EVA_RDY){
+    eva_msg( " @EVA HDL is not alive when stop , exit .\n");  
     exit(EXIT_FAILURE);  
   }
 
-  eva_t->control = EVA_BUS_STOP;
-  fprintf(stderr, " @EVA SW STOP ...\n");  
+  eva_t->sync.sw = EVA_STOP;
+  eva_msg( " @EVA SW STOP ...\n");  
 
-  while(eva_t->control == EVA_BUS_STOP ){
+  while(eva_t->sync.dut != EVA_STOP ){
     EVA_UNIT_DELAY;
   }
 
-  fprintf(stderr, " @EVA HDL STOP ACKED ...\n");  
+  eva_msg( " @EVA HDL STOP ACKED ...\n");  
   eva_destory();
 }
 
  void eva_drv_pause(){
 
-	 if( eva_t->control != EVA_BUS_ALIVE){
-		 fprintf(stderr, " @EVA HDL is not alive when pause , exit .\n");  
-		 exit(EXIT_FAILURE);  
-	 }
+     if( eva_t->sync.dut != EVA_RDY){
+         eva_msg( " @EVA HDL is not alive when pause , exit .\n");  
+         exit(EXIT_FAILURE);  
+     }
 
-	 eva_t->control = EVA_BUS_PAUSE;
+	 eva_t->sync.sw = EVA_PAUSE;
 
-	 while(eva_t->control == EVA_BUS_PAUSE ){
-		 EVA_UNIT_DELAY;
-	 }
+	 //while(eva_t->sync.dut != EVA_PAUSE ){
+	 //    EVA_UNIT_DELAY;
+	 //}
 
  }
 
  uint32_t evaGetPro(char *path){
      uint32_t val = 0;
-	 while( eva_t->get != EVA_GET_SYNC_IDLE ){
-		 EVA_UNIT_DELAY;
-	 }
+     uint32_t cnt = (strlen(path)+1)/32;
+     int      pos = 0;
 
-     strcpy(eva_t->str, path );
-     barrier();
-     eva_t->get = EVA_GET_SYNC_REQ;
-     
-	 while( eva_t->get == EVA_GET_SYNC_REQ ){
-         EVA_UNIT_DELAY;
-	 }
+     eva_t->get.sync = EVA_SOF;
 
-     val =  eva_t->getValue;
-     barrier();
-     eva_t->get = EVA_GET_SYNC_IDLE;
-     
+    do{
+        switch(eva_t->get.sync)
+            {
+            case EVA_ACK  : {
+                memcpy(eva_t->get.str, path + pos, 32);
+                pos += 32;
+                barrier();
+                if(cnt > 0)
+                    cnt--;
+                eva_t->get.sync = EVA_SEND_A;
+                break;
+            }
+            case EVA_ACK_A : {
+                memcpy(eva_t->get.str, path + pos, 32);
+                pos += 32;
+                barrier();
+                if(cnt > 0){
+                    cnt--;
+                    eva_t->get.sync = EVA_ACK_A;
+                }else{
+                    eva_t->get.sync = EVA_EOF;
+                }
+                break;
+            }
+            case EVA_ACK_B : {
+                memcpy(eva_t->get.str, path + pos, 32);
+                pos += 32;
+                barrier();
+                if(cnt > 0){
+                    cnt--;
+                    eva_t->get.sync = EVA_ACK_B;
+                }else{
+                    eva_t->get.sync = EVA_EOF;
+                }
+                break;
+            }
+            case EVA_ROK : {
+                val = *(int *)eva_t->get.str;
+
+                barrier();
+                eva_t->get.sync = EVA_IDLE;
+                break;
+            }
+            }
+        
+        EVA_UNIT_DELAY;
+        
+    }while( cnt != 0);
+
      return val;
  }
 
  uint32_t evaGet(char *path){
      uint32_t val = evaGetPro(path);
-     fprintf(stderr," +evaGet  %s = 0x%x\n", path, val);
+     eva_msg(" %s = 0x%x\n", path, val);
      return val;
  }
 
@@ -510,9 +600,9 @@ void eva_drv_stop(){
      }
 
 	 if(mode == 1){
-		 fprintf(stderr," +evaWait %s == 0x%x : after %dus @HDL : %llx CYCLE \n", path, value, tim, eva_t->tick);
+		 eva_msg(" %s == 0x%x : after %dus @HDL : %llx CYCLE \n", path, value, tim, eva_t->tick);
 	 }else{
-		 fprintf(stderr," +evaWait %s != 0x%x : after %dus @HDL : %llx CYCLE\n", path, value, tim, eva_t->tick);
+		 eva_msg(" %s != 0x%x : after %dus @HDL : %llx CYCLE\n", path, value, tim, eva_t->tick);
 	 }
  }
 
@@ -527,7 +617,7 @@ void eva_drv_stop(){
 			 EVA_UNIT_DELAY;
 	 }while( grap < cycle);
   
-	 fprintf(stderr," @EVA delayed  %d HDL CYCLE [%llx -> %llx]\n", cycle, mark, mark2 );
+	 eva_msg(" delayed %d HDL CYCLE [%llx -> %llx]\n", cycle, mark, mark2 );
  }
 
 
@@ -539,16 +629,16 @@ void eva_drv_stop(){
      if(eva_tc.tc_nums < EVA_MAX_TC_NUM){
          eva_tc.tc[eva_tc.tc_nums].func = func;
          strcpy( eva_tc.tc[eva_tc.tc_nums].name , name );
-         fprintf(stderr," @EVA Register TC  %3d) %s \n",  eva_tc.tc_nums, eva_tc.tc[eva_tc.tc_nums].name );
+         eva_msg(" @EVA Register TC  %3d) %s \n",  eva_tc.tc_nums, eva_tc.tc[eva_tc.tc_nums].name );
          eva_tc.tc_nums++;
      }
  }
 
  void  EVA_TC_SHOW_LIST(){
      int cc;
-	 fprintf(stderr," *** EVA TC List *** \n" );
+	 eva_msg(" *** EVA TC List *** \n" );
      for(cc=0; cc<eva_tc.tc_nums; cc++){
-         fprintf(stderr," %3d) %s \n",  cc, eva_tc.tc[cc].name );
+         eva_msg(" %3d) %s \n",  cc, eva_tc.tc[cc].name );
      }
  }
 
@@ -586,10 +676,10 @@ void eva_drv_stop(){
      int id = EVA_TC_GET_ID_BY_NAME( name );
 
      if(id != -1){
-         fprintf(stderr," +going TC : %s \n\n", name );
+         eva_msg(" +going TC : %s \n\n", name );
          EVA_TC_RUN_BY_ID(id);
      }else{
-         fprintf(stderr," TC : %s is not found !\n", name );
+         eva_msg(" TC : %s is not found !\n", name );
          EVA_TC_SHOW_LIST();
      }
  }
@@ -646,7 +736,7 @@ void eva_drv_stop(){
 
  void  eva_mem_init(){
      memset(&eva_mem_mag, 0, sizeof(EVA_MEM_MAG_t));
-     fprintf(stderr," EVA Memory Map List Initialed!\n"); 
+     eva_msg(" EVA Memory Map List Initialed!\n"); 
  }
  
  int  eva_mem_seek(uint64_t aligned_ptr, uint64_t size){
@@ -678,11 +768,11 @@ void eva_drv_stop(){
              eva_mem_mag.map[eva_mem_mag.map_nums].end = new_end;
              eva_mem_mag.map_nums++;
          }else{
-             fprintf(stderr," Error: eva_malloc exceed EVA_MAX_MAP_NUM %d ! change EVA_MAX_MAP_NUM bigger!\n", EVA_MAX_MAP_NUM );
+             eva_msg(" Error: eva_malloc exceed EVA_MAX_MAP_NUM %d ! change EVA_MAX_MAP_NUM bigger!\n", EVA_MAX_MAP_NUM );
          }
 
      }else{
-         fprintf(stderr," Warn: eva_malloc overlap detected ! %llx+%llx :: %llx+%llx @item %d\n", 
+         eva_msg(" Warn: eva_malloc overlap detected ! %llx+%llx :: %llx+%llx @item %d\n", 
                  aligned_ptr, size, eva_mem_mag.map[index].keypair, eva_mem_mag.map[index].end, index );
          if( aligned_ptr > eva_mem_mag.map[index].keypair ){
              eva_mem_mag.map[index].keypair = aligned_ptr;
@@ -701,12 +791,12 @@ void eva_drv_stop(){
      uint64_t new_end = aligned_ptr + size;
      int      error = 0;
      if(index < 0){
-         fprintf(stderr," Error: eva_mem_access_check [%s]: illige address access [0x%llx + %llx]! \n", dir ? "W" : "R", aligned_ptr, size );
+         eva_msg(" Error: [%s]: illige address access [0x%llx + %llx]! \n", dir ? "W" : "R", aligned_ptr, size );
          error = 1;
      }else{
          if( (aligned_ptr < eva_mem_mag.map[index].keypair &&
               new_end     > eva_mem_mag.map[index].end) ){
-             fprintf(stderr," Error: eva_mem_access_check [%s]: illige address boundary access [0x%llx + %llx] :: [0x%llx + %llx] !\n", 
+             eva_msg(" Error: [%s]: illige address boundary access [0x%llx + %llx] :: [0x%llx + %llx] !\n", 
                      dir ? "W" : "R", aligned_ptr, size, eva_mem_mag.map[index].keypair, eva_mem_mag.map[index].end
                      );
              error = 1;

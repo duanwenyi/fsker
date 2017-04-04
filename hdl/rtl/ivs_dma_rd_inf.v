@@ -9,7 +9,7 @@ module IVS_DMA_RD_INF(/*AUTOARG*/
     arburst,
     arlock,
     arcache,
-    arport,
+    arprot,
     arregion,
     arqos,
     aruser,
@@ -55,7 +55,7 @@ module IVS_DMA_RD_INF(/*AUTOARG*/
     output [1:0]        arburst;     // [1:0]  2'b01 
     output              arlock;                      
     output [3:0]        arcache;     // [3:0]        
-    output [2:0]        arport;      // [2:0]        
+    output [2:0]        arprot;      // [2:0]        
     output [3:0]        arregion;    // [3:0]        
     output [3:0]        arqos;       // [3:0]        
     output [7:0]        aruser;      // [7:0]        
@@ -67,7 +67,7 @@ module IVS_DMA_RD_INF(/*AUTOARG*/
     input               rlast;                       
     input [1:0]         rresp;       // [1:0] 
 
-    // Port Interface
+    // Prot Interface
     input               dr0_req;     // dr: data read 
     input [31:0]        dr0_base;
     input [5:0]         dr0_len;
@@ -96,7 +96,7 @@ module IVS_DMA_RD_INF(/*AUTOARG*/
     assign aruser    = 8'b0;
     assign arqos     = 4'b0;
     assign arregion  = 4'b0;
-    assign arport    = 3'b0;
+    assign arprot    = 3'b0;
     assign arcache   = 4'b0;
     assign arlock    = 1'b0;
     assign arsize    = 3'b100;

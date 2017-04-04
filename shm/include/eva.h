@@ -142,6 +142,5 @@ void  eva_destory();
 /* Optimization barrier */  
 #define barrier() __asm__ __volatile__("": : :"memory")  
 
-#define eva_msg (printf("[%s-%d]: ", __FUNCTION__, __LINE__), printf)
-
+#define eva_msg(...) do{fprintf(stderr,"@[%s]:", __FUNCTION__),fprintf(stderr,##__VA_ARGS__);}while(0)
 #endif

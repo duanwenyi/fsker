@@ -329,7 +329,6 @@ module TB_EVA(/*AUTOARG*/
         #10ns;
         @(posedge aclk );
         
-        active = 1'b1;
         eva_hdl_init( 1'b1,
                       {8'd0,8'd0,8'd32,8'd32},
                       1'b1,
@@ -337,6 +336,9 @@ module TB_EVA(/*AUTOARG*/
                       1'b1,
                       1'b1
                       );
+
+        #10ns;
+        active = 1'b1;
     end
     
     always @(posedge aclk or negedge arest_n)

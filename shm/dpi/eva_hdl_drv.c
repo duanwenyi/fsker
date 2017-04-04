@@ -13,7 +13,7 @@ EVA_HDL_t eva_bus_t;
 
 #define EVA_DEBUG
 //#define EVA_AXI_DEBUG
-#define EVA_CONTROL_C_OUT
+//#define EVA_CONTROL_C_OUT
 
 void eva_handler(int s){
     eva_msg( " @EVA catch a SYSTEM interrupt .\n");  

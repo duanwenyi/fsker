@@ -74,6 +74,7 @@ module TH;
     wire [ 5:0]          bid;
     wire                 bready;
 
+    
     //Replace regexp (default \(\w+\)\(,\) -> \1^I^I(\1^I),^J): 
     TB_EVA eva(// Outputs
 			   .htrans	   (htrans	   ),
@@ -217,6 +218,7 @@ module TH;
                       .rresp            (rresp[1:0]),
                       .awready          (awready),
                       .wready           (wready));
+
 
     EVA_MEM_WRAP #(32,64,1) U_RAM32x64(// Outputs
 				                       .rdata		(hrdata	),

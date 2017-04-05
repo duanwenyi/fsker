@@ -84,7 +84,7 @@ module TH;
 			   .hsize	   (hsize	   ),
 			   .hburst	   (hburst	   ),
 			   .hprot	   (hprot	   ),
-			   .hready_out (hready_out ),
+			   .hready_out (hready_in  ),
 
 			   .arready	   (arready    ),
 			   .rvalid	   (rvalid	   ),
@@ -98,7 +98,7 @@ module TH;
 			   // Inputs
 			   .hclk	   (hclk	   ),
 			   .hrest_n	   (hrest_n    ),
-			   .hready_in  (hready_in  ),
+			   .hready_in  (hready_out ),
 			   .hresp	   (hresp	   ),
 			   .hrdata	   (hrdata	   ),
 			   .aclk	   (aclk	   ),

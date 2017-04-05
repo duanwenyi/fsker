@@ -328,7 +328,6 @@ module TB_EVA(/*AUTOARG*/
         wait(arest_n == 1'b1);
         #10ns;
         @(posedge aclk );
-        
         eva_hdl_init( 1'b1,
                       {8'd0,8'd0,8'd32,8'd32},
                       1'b1,
@@ -336,16 +335,16 @@ module TB_EVA(/*AUTOARG*/
                       1'b1,
                       1'b1
                       );
-
-        #10ns;
+        #20ns;
         active = 1'b1;
     end
     
     always @(posedge aclk or negedge arest_n)
-      if(~arest_n)
-        tick  <= 64'b0;
-      else
-        tick  <= tick + 1;
+      if(~arest_n) begin
+          tick  <= 64'b0;
+      end else if(active) begin
+          tick  <= tick + 1;
+      end
     
     always @(posedge aclk)
       if(active) begin

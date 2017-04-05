@@ -29,10 +29,11 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
 #endif
 
 #ifdef EVA_AHB_DEBUG
-    eva_msg("%8x -- %8x\n", addr, data);
+    eva_msg("%8x -- %8x @ %llu\n", addr, data, eva_t->tick);
 #endif
 
 	eva_t->slv.write = 1;
+	eva_t->slv.size  = 2;
 	eva_t->slv.addr_l  = addr;
 	eva_t->slv.addr_u  = 0;
 	eva_t->slv.data_l  = data;
@@ -58,6 +59,7 @@ uint32_t eva_cpu_rd(uint32_t addr){
 #endif
 
 	eva_t->slv.write = 0;
+	eva_t->slv.size  = 2;
 	eva_t->slv.addr_l  = addr;
 	eva_t->slv.addr_u  = 0;
 	barrier();
@@ -392,8 +394,9 @@ void eva_drv_init(){
                 break;
             }
             case EVA_RDY  : {
-                eva_t->mst_wr.data_0;// *slv_cfg;
-                eva_t->mst_wr.data_1;// *mst_cfg;
+                //eva_t->mst_wr.data_0;// *slv_cfg;
+                //eva_t->mst_wr.data_1;// *mst_cfg;
+                barrier();
 
                 eva_msg( " @EVA AHB Slave set Address %d Bits, Data %d Bits.\n", 
                          eva_t->mst_wr.data_0 & 0xFF, (eva_t->mst_wr.data_0 >>8) & 0xFF);  
@@ -475,8 +478,9 @@ void eva_drv_init(){
         }
     }
 
-	eva_msg( " @EVA SW initial OVER @0x%llx\n",(size_t)eva_t);  
     EVA_TC_INIT();
+	eva_msg( " @EVA SW initial OVER @0x%llx\n",(size_t)eva_t);  
+
 }
 
 void eva_drv_stop(){

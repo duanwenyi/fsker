@@ -11,7 +11,7 @@
 
 EVA_HDL_t eva_bus_t;
 
-#define EVA_DEBUG
+//#define EVA_DEBUG
 //#define EVA_AXI_DEBUG
 //#define EVA_CONTROL_C_OUT
 
@@ -48,10 +48,12 @@ void eva_hdl_init( const svBit en_slv,
         switch(eva_bus_t.eva_t->sync.sw)
             {
             case EVA_IDLE  : {
+                barrier();
                 eva_bus_t.eva_t->sync.dut = EVA_INIT;
                 break;
             }
             case EVA_INIT  : {
+                barrier();
                 eva_bus_t.eva_t->mst_wr.data_0 = *slv_cfg;
                 eva_bus_t.eva_t->mst_wr.data_1 = *mst_cfg;
 
@@ -80,6 +82,8 @@ void eva_hdl_init( const svBit en_slv,
 
     eva_bus_t.eva_t->mst_wr.sync = EVA_IDLE;
     eva_bus_t.eva_t->mst_rd.sync = EVA_IDLE;
+
+    eva_bus_t.ahb_fsm = EVA_AHB_IDLE;
 
     eva_msg( " @EVA HDL is set ALIVE now.\n");  
  
@@ -635,44 +639,46 @@ void evaScopeGetHandle(){
     char str[512];
     int  pos = 0;
 
-    do{
-        switch(eva_bus_t.eva_t->get.sync)
-            {
-            case EVA_SOF  : {
-                eva_bus_t.eva_t->get.sync = EVA_ACK;
-                break;
-            }
-            case EVA_SEND_A : {
-                memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
-                pos += 32;
-                barrier();
+    if(eva_bus_t.eva_t->get.sync != EVA_IDLE){
+
+        do{
+            switch(eva_bus_t.eva_t->get.sync)
+                {
+                case EVA_SOF  : {
+                    eva_bus_t.eva_t->get.sync = EVA_ACK;
+                    break;
+                }
+                case EVA_SEND_A : {
+                    memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
+                    pos += 32;
+                    barrier();
                 
-                eva_bus_t.eva_t->get.sync = EVA_ACK_A;
-                break;
-            }
-            case EVA_SEND_B : {
-                memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
-                pos += 32;
-                barrier();
+                    eva_bus_t.eva_t->get.sync = EVA_ACK_A;
+                    break;
+                }
+                case EVA_SEND_B : {
+                    memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
+                    pos += 32;
+                    barrier();
 
-                eva_bus_t.eva_t->get.sync = EVA_ACK_B;
-                break;
-            }
-            case EVA_EOF : {
-                // do Get Process
-                *(int *)eva_bus_t.eva_t->get.str = evaScopeGet( str );
+                    eva_bus_t.eva_t->get.sync = EVA_ACK_B;
+                    break;
+                }
+                case EVA_EOF : {
+                    // do Get Process
+                    *(int *)eva_bus_t.eva_t->get.str = evaScopeGet( str );
 
-                barrier();
-                eva_bus_t.eva_t->get.sync = EVA_ROK;
-                break;
-            }
-            }
+                    barrier();
+                    eva_bus_t.eva_t->get.sync = EVA_ROK;
+                    break;
+                }
+                }
         
-        EVA_UNIT_DELAY;
+            EVA_UNIT_DELAY;
         
-    }while( eva_bus_t.eva_t->sync.dut != EVA_IDLE);
+        }while( eva_bus_t.eva_t->get.sync != EVA_IDLE);
 
-
+    }
 }
 
 #if 0

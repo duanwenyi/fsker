@@ -79,4 +79,4 @@ ipcs:
 	ipcs -m |grep $$USER |awk '{print $$2}' | xargs ipcrm -m
 
 clean:
-	rm *.fsdb INCA_libs *.log app_demo *.shm *.key output simv_exec* libdpi.so ${LIB_DIR}/* -rf
+	rm *.fsdb INCA_libs *.log app_demo *.shm *.key output simv_exec* libdpi.so .simvision ${LIB_DIR}/* -rf

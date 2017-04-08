@@ -189,6 +189,12 @@ void eva_ahb_bus_func_o( svBitVecVal *htrans,
             eva_bus_t.eva_t->slv.data_l = eva_bus_t.hrdata;
             eva_bus_t.eva_t->slv.data_u = eva_bus_t.hrdata_u;
       
+            eva_msg(" @AHB %s addr: 0x%8x data: 0x%8x \n",
+                    eva_bus_t.eva_t->slv.write ? "Write":"Read ",
+                    eva_bus_t.eva_t->slv.addr_l, 
+                    eva_bus_t.eva_t->slv.data_l 
+                    );
+
             eva_bus_t.ahb_fsm = EVA_AHB_IDLE;
 
             eva_bus_t.eva_t->slv.sync = EVA_SYNC_ACK;
@@ -652,7 +658,6 @@ void evaScopeGetHandle(){
                     memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
                     pos += 32;
                     barrier();
-                
                     eva_bus_t.eva_t->get.sync = EVA_ACK_A;
                     break;
                 }
@@ -660,7 +665,6 @@ void evaScopeGetHandle(){
                     memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
                     pos += 32;
                     barrier();
-
                     eva_bus_t.eva_t->get.sync = EVA_ACK_B;
                     break;
                 }

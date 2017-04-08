@@ -28,9 +28,6 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
 	}
 #endif
 
-#ifdef EVA_AHB_DEBUG
-    eva_msg("%8x -- %8x @ %llu\n", addr, data, eva_t->tick);
-#endif
 
 	eva_t->slv.write = 1;
 	eva_t->slv.size  = 2;
@@ -46,7 +43,7 @@ void eva_cpu_wr(uint32_t addr, uint32_t data){
 	}
 
 #ifdef EVA_AHB_DEBUG
-    eva_msg("%8x -- %8x -- over\n", addr, data);
+    eva_msg("%8x -- %8x @ %llu\n", eva_t->slv.addr_l, eva_t->slv.data_l, eva_t->tick);
 #endif
 }
 
@@ -70,7 +67,7 @@ uint32_t eva_cpu_rd(uint32_t addr){
 	}
   
 #ifdef EVA_AHB_DEBUG
-    eva_msg("%8x -- %8x\n", addr, eva_t->slv.data_l);
+    eva_msg("%8x -- %8x @ %llu\n", eva_t->slv.addr_l, eva_t->slv.data_l, eva_t->tick);
 #endif
 
 	return eva_t->slv.data_l;
@@ -518,8 +515,10 @@ void eva_drv_stop(){
 
  uint32_t evaGetPro(char *path){
      uint32_t val = 0;
-     uint32_t cnt = (strlen(path)+1)/32;
+     uint32_t cnt = (strlen(path)+31)/32;
      int      pos = 0;
+
+     //eva_msg( "%s -- %d chars -- %d times.\n", path, strlen(path), cnt);  
 
      eva_t->get.sync = EVA_SOF;
 
@@ -536,24 +535,24 @@ void eva_drv_stop(){
                 break;
             }
             case EVA_ACK_A : {
-                memcpy(eva_t->get.str, path + pos, 32);
-                pos += 32;
-                barrier();
                 if(cnt > 0){
                     cnt--;
-                    eva_t->get.sync = EVA_ACK_A;
+                    memcpy(eva_t->get.str, path + pos, 32);
+                    pos += 32;
+                    barrier();
+                    eva_t->get.sync = EVA_SEND_B;
                 }else{
                     eva_t->get.sync = EVA_EOF;
                 }
                 break;
             }
             case EVA_ACK_B : {
-                memcpy(eva_t->get.str, path + pos, 32);
-                pos += 32;
-                barrier();
                 if(cnt > 0){
                     cnt--;
-                    eva_t->get.sync = EVA_ACK_B;
+                    memcpy(eva_t->get.str, path + pos, 32);
+                    pos += 32;
+                    barrier();
+                    eva_t->get.sync = EVA_SEND_A;
                 }else{
                     eva_t->get.sync = EVA_EOF;
                 }
@@ -570,7 +569,7 @@ void eva_drv_stop(){
         
         EVA_UNIT_DELAY;
         
-    }while( cnt != 0);
+    }while( eva_t->get.sync != EVA_IDLE);
 
      return val;
  }

@@ -49,7 +49,10 @@
 #define EVA_SYNC_ACK   0xEEc5c5c5
 
 
-#define EVA_UNIT_DELAY usleep(1)
+//#define EVA_UNIT_DELAY usleep(1)
+#define EVA_UNIT_DELAY do{int ers = 16;do{barrier();ers--;}while(ers >0);}while(0)
+
+
 #define GEN_DMA_ADDR64(high, low) ( ( (uint64_t)(high) <<32 ) | (low))
 
 #define EVA_MAX_INT_NUM 32

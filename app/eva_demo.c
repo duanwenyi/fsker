@@ -15,7 +15,7 @@ void testcase_1(){
 int main(int argc, char **argv){
     int rd_val;
     int cc;
-    int ahb_rw_test = 10000;
+    int ahb_rw_test = 1000;
     
     //if(freopen("eva_run.log", "w", stderr) == NULL)
     //    fprintf(stderr,"error redirecting stdout\n");
@@ -59,19 +59,27 @@ int main(int argc, char **argv){
     
     evaWait( "TH.U_IVS_TOP.U_IVS_SLV.cfg_par2", 0xFFFF0000, 1 );
 
-    eva_delay(10);
-    eva_delay(50);
-    eva_delay(100);
-    eva_delay(1000);
-    eva_delay(10000);
+    evaWait( "TH.U_IVS_TOP.U_IVS_SLV.cfg_par2", 0xFFFF0000, 1 );
+
+    evaWait( "TH.U_IVS_TOP.U_IVS_SLV.cfg_par2", 0xFFFF0000, 1 );
+
     fprintf(stderr," Begin %d times AHB write + read : \n", ahb_rw_test);
     for(cc=0; cc< ahb_rw_test; cc++){
         eva_cpu_wr(0x108, 0xFFFF0000);
         rd_val = eva_cpu_rd(0x100);
     }
     eva_delay(1);
+    eva_delay(8);
+    eva_delay(16);
+    eva_delay(32);
+    eva_delay(64);
+    eva_delay(128);
+    eva_delay(512);
+    eva_delay(1024);
+    eva_delay(8192);
+    eva_delay(10000);
 
-    sleep(10);
+    sleep(5);
 
     eva_free(base);
 

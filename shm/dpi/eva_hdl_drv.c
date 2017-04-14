@@ -42,7 +42,7 @@ void eva_hdl_init( const svBit en_slv,
     sigaction(SIGINT, &sigIntHandler, NULL); 
 #endif
 
-    eva_bus_t.eva_t = (EVA_BUS_ST*)eva_map(1);
+    eva_bus_t.eva_t = (EVA_BUS_ST_t *)eva_map(1);
     
     do{
         switch(eva_bus_t.eva_t->sync.sw)
@@ -645,15 +645,12 @@ void evaScopeGetHandle(){
     char str[512];
     int  pos = 0;
 
-    if(eva_bus_t.eva_t->get.sync != EVA_IDLE){
-
+    if(eva_bus_t.eva_t->get.sync == EVA_SOF){
+        eva_bus_t.eva_t->get.sync = EVA_ACK;
+        
         do{
             switch(eva_bus_t.eva_t->get.sync)
                 {
-                case EVA_SOF  : {
-                    eva_bus_t.eva_t->get.sync = EVA_ACK;
-                    break;
-                }
                 case EVA_SEND_A : {
                     memcpy(str + pos, eva_bus_t.eva_t->get.str, 32);
                     pos += 32;

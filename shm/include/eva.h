@@ -50,7 +50,8 @@
 
 
 //#define EVA_UNIT_DELAY usleep(1)
-#define EVA_UNIT_DELAY do{int ers = 16;do{barrier();ers--;}while(ers >0);}while(0)
+#define EVA_UNIT_DELAY do{int ers = 32;do{barrier();ers--;}while(ers >0);}while(0)
+#define EVA_M_DELAY    do{int tim = 64;do{EVA_UNIT_DELAY;tim--;}while(tim >0);}while(0)
 
 
 #define GEN_DMA_ADDR64(high, low) ( ( (uint64_t)(high) <<32 ) | (low))
@@ -134,6 +135,11 @@ typedef struct EVA_BUS_ST {
     // One 32 bits counter be full to 0xFFFF_FFFF only need about ~ 3 hour
     // So 64 bits is better
     uint64_t tick;
+
+    uint64_t max_rate;
+    uint64_t min_rate;
+    uint64_t cur_rate;
+    
 
 }EVA_BUS_ST_t, *EVA_BUS_ST_p;
 

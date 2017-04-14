@@ -92,6 +92,9 @@ void eva_monitor_handler(void){
     
     char     rota[4] = {'-','\\','|','/'};
 
+    int      update = 0;
+    uint64_t stable_rate = 0;
+
     eva_msg(" created !\n");
     while(1){
 		
@@ -107,14 +110,18 @@ void eva_monitor_handler(void){
         }
 		
         local_time++;
-        if(eva_rate > max_rate)
+        if(eva_rate > max_rate){
             max_rate = eva_rate;
+            update = 1;
+        }
 			
         if( (eva_rate < min_rate)  && 
             (eva_rate !=0 ) &&
             ( (uint64_t)(min_rate - eva_rate) < (eva_rate/4) )  // fix stop action case
-            )
+            ){
             min_rate = eva_rate;
+            update = 1;
+        }
 
         if(eva_rate ==0){
             die_cnt++;
@@ -126,6 +133,14 @@ void eva_monitor_handler(void){
         }else{
             die_cnt = 0;
         }
+        
+        if(update){
+            eva_t->max_rate = max_rate; 
+            eva_t->min_rate = min_rate; 
+            update = 0;
+        }
+
+        eva_t->cur_rate = eva_rate;
 
         eva_msg( " %llu S (%c) HDL: %llu (CYCLE/S) [MAX/MIN][%llu / %llu] CYCLE/S\r",
                 local_time, rota[local_time%4], eva_rate, max_rate,  min_rate);  
@@ -462,17 +477,14 @@ void eva_drv_init(){
         }
     }
 
-    if(en_get){
-        
-        ret = pthread_create(&eva_monitor, NULL, 
+    ret = pthread_create(&eva_monitor, NULL, 
 #ifndef __cplusplus
-                             (void *)
+                         (void *)
 #endif
-                             eva_monitor_handler, NULL);
-        if(ret != 0){
-            eva_msg( " @EVA SW Monitor Handle  thread created failed , exit .\n");  
-            exit(EXIT_FAILURE);  
-        }
+                         eva_monitor_handler, NULL);
+    if(ret != 0){
+        eva_msg( " @EVA SW Monitor Handle  thread created failed , exit .\n");  
+        exit(EXIT_FAILURE);  
     }
 
     EVA_TC_INIT();
@@ -491,10 +503,14 @@ void eva_drv_stop(){
   eva_msg( " @EVA SW STOP ...\n");  
 
   while(eva_t->sync.dut != EVA_STOP ){
-    EVA_UNIT_DELAY;
+      usleep(1);
   }
 
-  eva_msg( " @EVA HDL STOP ACKED ...\n");  
+  eva_msg( " @EVA max : %d - min : %d - average : %d \n",
+           eva_t->max_rate,
+           eva_t->min_rate,
+           eva_t->cur_rate
+           );  
   eva_destory();
 }
 
@@ -518,7 +534,15 @@ void eva_drv_stop(){
      uint32_t cnt = (strlen(path)+31)/32;
      int      pos = 0;
 
-     //eva_msg( "%s -- %d chars -- %d times.\n", path, strlen(path), cnt);  
+     if(cnt > 32){
+         eva_msg( "%s -- %d chars -- %d times too long.\n", path, strlen(path), cnt);  
+         return 0;
+     }
+     
+     // protect for multi-thread case
+     while( eva_t->get.sync != EVA_IDLE){
+         usleep(1);
+     };
 
      eva_t->get.sync = EVA_SOF;
 
@@ -586,8 +610,6 @@ void eva_drv_stop(){
 	   value
 	   mode : 1: be equal to out  0: be not equal to out
 	 */
-     int tim = 0;
-
      uint32_t val = 0;
 
      while(1){
@@ -597,15 +619,13 @@ void eva_drv_stop(){
              ){
              break;
          }
-         EVA_UNIT_DELAY;
-         tim++;
-
+         usleep(5);
      }
 
 	 if(mode == 1){
-		 eva_msg(" %s == 0x%x : after %dus @HDL : %llx CYCLE \n", path, value, tim, eva_t->tick);
+		 eva_msg(" %s == 0x%x @ %llx \n", path, value, eva_t->tick);
 	 }else{
-		 eva_msg(" %s != 0x%x : after %dus @HDL : %llx CYCLE\n", path, value, tim, eva_t->tick);
+		 eva_msg(" %s != 0x%x @ %llx\n", path, value, eva_t->tick);
 	 }
  }
 
@@ -613,14 +633,20 @@ void eva_drv_stop(){
 	 uint64_t mark = eva_t->tick;
 	 uint64_t mark2;
 	 int grap;
+
 	 do{
 		 mark2 = eva_t->tick;
 		 grap = mark2 - mark;
-		 if(cycle > 20)
-			 EVA_UNIT_DELAY;
+		 //if(eva_t->cur_rate < 1000)
+         //    usleep(1000);
+         //else if(eva_t->cur_rate < 1000000)
+         //    usleep(1);
+         //else
+         EVA_M_DELAY;
+
 	 }while( grap < cycle);
   
-	 eva_msg(" delayed %d HDL CYCLE [%llx -> %llx]\n", cycle, mark, mark2 );
+	 eva_msg(" delayed %d HDL CYCLE [0x%llx -> 0x%llx : %d]\n", cycle, mark, mark2, grap - cycle );
  }
 
 

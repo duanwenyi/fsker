@@ -145,6 +145,7 @@ typedef struct EVA_BUS_ST {
 
 void *eva_map(int do_init);
 void  eva_unmap();
+void  eva_show(EVA_BUS_ST_p p , char *info);
 
 void  eva_destory();
 

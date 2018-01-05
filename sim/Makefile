@@ -25,10 +25,11 @@ VCS_MODE       = -full64
 VCS_CMPL_OPTS  = -sverilog +v2k +libext+.v+.sv +verilog2001ext+.v +vcs+lic+wait +plusarg_save +notimingcheck +nospecify -timescale=1ns/10ps -debug $(VCS_MODE)
 VCS_CMPL_OPTS += +incdir+$(VCS_HOME)/etc/vmm +vpi
 VCS_CMPL_OPTS += -Mdir=./output/vmm_test_scrc -o $(VCS_SIM_EXEC) -l ./output/vmm_test.cmp_log
-VCS_CMPL_OPTS += -f ${PRO_FILE} ${LIB_DIR}/libdpi.so
+VCS_CMPL_OPTS += -f ${PRO_FILE}
+#${LIB_DIR}/libdpi.so
 #VCS_CMPL_OPTS += +vpdfile+simv.vpd
 
-VCS_RUN_OPTS   = -l ${LIB_DIR}/simv.log -ucli -i ../cfg/vcs_sim.tcl
+VCS_RUN_OPTS   = -l ${LIB_DIR}/simv.log -ucli -i ../cfg/vcs_sim.tcl -sv_root $(LIB_DIR) -sv_lib libdpi
 
 
 

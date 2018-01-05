@@ -39,6 +39,22 @@ void eva_unmap(void *map){
         }  
 }
 
+void  eva_show(EVA_BUS_ST_p p , char *info){
+    
+    sprintf(info, " +EVA Rate MAX:%6d    MIN:%6d      CUR:%6d - Tick:%lld \n\
+ +SLV (%c): Addr %08x %08x - Data %08x %08x - SIZE %3x\n\
+ +MST (W): Addr %08x %08x - Data %08x %08x %08x %08x - STRB %08x\n\
+ +MST (R): Addr %08x %08x - Data %08x %08x %08x %08x\n\
+",
+            p->max_rate,p->min_rate,p->cur_rate, p->tick,
+            p->slv.write ? 'W':'R',p->slv.addr_u,p->slv.addr_l,p->slv.data_u,p->slv.data_l,p->slv.size,
+            p->mst_wr.addr_u,p->mst_wr.addr_l,p->mst_wr.data_3,p->mst_wr.data_2,p->mst_wr.data_1,p->mst_wr.data_0,p->mst_wr.strb,
+            p->mst_rd.addr_u,p->mst_rd.addr_l,p->mst_rd.data_3,p->mst_rd.data_2,p->mst_rd.data_1,p->mst_rd.data_0
+            
+            );
+    
+    
+}
 
 void eva_destory(){
     void *shm = NULL;  

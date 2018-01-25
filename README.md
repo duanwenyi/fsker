@@ -1,2 +1,2 @@
 # fsker
-Make people communicate better &amp; free !
+ A platform for systemverilog comunicate with C/C++ in another process !

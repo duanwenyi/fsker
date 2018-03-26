@@ -93,13 +93,13 @@
 
 (require 'helm-grep)
 (require 'helm-bookmark)
-                                        ;(require 'projectile)
-                                        ;(require 'helm-projectile)
-                                        ;(projectile-global-mode)
-                                        ;(setq projectile-completion-system 'helm)
-                                        ;(setq projectile-indexing-method 'alien)
-                                        ;(setq projectile-enable-caching t)
-                                        ;(helm-projectile-on)
+(require 'projectile)
+(require 'helm-projectile)
+(projectile-global-mode)
+(setq projectile-completion-system 'helm)
+(setq projectile-indexing-method 'alien)
+(setq projectile-enable-caching t)
+(helm-projectile-on)
 
 (require 'helm-multi-match)
 
@@ -353,21 +353,18 @@ Version 2015-04-09"
 (global-set-key [S-f7] 'hl-find-prev-thing)
 
 
-(global-set-key [f8] 'fiplr-find-file) 
-(global-set-key [C-f8] 'speedbar)
-(global-set-key [S-f8] 'auto-complete-mode)
-
+(global-set-key [f8] 'helm-projectile-find-file) 
+(global-set-key [C-f8] 'helm-projectile-switch-project)
+(global-set-key [S-f8] 'comint-previous-matching-input)
 (setq fiplr-ignored-globs '((directories ("pre_sim" ".*"))
-                            (files ("*novas*" "*.rc" "TAGS" ".tags" "#*" ".*"))
-                            ))
+                            (files ("*novas*" "*.rc" "TAGS" ".tags" "#*" ".*"))                            ))
 
 (global-set-key [f9] 'query-replace)
 (global-set-key [C-f9] 'replace-string)
 
-
 (global-set-key [C-f10] 'helm-swoop-without-pre-input);ace-isearch-helm-swoop-from-isearch
 (global-set-key [f10] 'helm-swoop)
-
+(global-set-key [S-f10] 'auto-complete-mode)
 
 (global-set-key [f11] 'delete-other-windows)
 (global-set-key [S-f11] 'delete-window)

@@ -113,7 +113,7 @@
 (global-set-key "\C-p" 'helm-show-kill-ring) ;;//  fiplr-find-file ;helm-find only start in shell buffer
 
 (global-set-key [?\C-0] 'xah-copy-file-path)
-                                        ;(global-set-key [?\C-9] 'helm-projectile-find-file)
+(global-set-key [?\C-9] 'fiplr-find-file)
                                         ;(global-set-key [?\C-8] 'minimap-mode)
 
 (remove-hook 'find-file-hooks 'vc-find-file-hook)
@@ -355,15 +355,17 @@ Version 2015-04-09"
 
 (global-set-key [f8] 'helm-projectile-find-file) 
 (global-set-key [C-f8] 'helm-projectile-switch-project)
-(global-set-key [S-f8] 'comint-previous-matching-input)
+(global-set-key [S-f8] 'comint-previous-matching-input-from-input)
+
 (setq fiplr-ignored-globs '((directories ("pre_sim" ".*"))
                             (files ("*novas*" "*.rc" "TAGS" ".tags" "#*" ".*"))                            ))
 
 (global-set-key [f9] 'query-replace)
-(global-set-key [C-f9] 'replace-string)
+(global-set-key [C-f9] 'helm-swoop)
+(global-set-key [S-f9] 'sr-speedbar-toggle)
 
+(global-set-key [f10] 'replace-string)
 (global-set-key [C-f10] 'helm-swoop-without-pre-input);ace-isearch-helm-swoop-from-isearch
-(global-set-key [f10] 'helm-swoop)
 (global-set-key [S-f10] 'auto-complete-mode)
 
 (global-set-key [f11] 'delete-other-windows)
